@@ -1,0 +1,17 @@
+{
+  "name": "user",
+  "description": "Part of the Ghiraldi Core plugins.  This is a plugin that adds users to the application.",
+  "version": "0.0.1",
+  "author": {
+    "name": "John O'Connor",
+    "email": "john@catalyzingconcepts.com"
+  },
+  "contributors": [
+    {
+      "name": "John O'Connor",
+      "email": "john@catalyzingconcepts.com"
+    }
+  ],
+  "dependencies": {
+  }
+}

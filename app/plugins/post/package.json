@@ -1,0 +1,18 @@
+{
+  "name": "role",
+  "description": "Part of the Ghiraldi Core plugins.  This is a plugin that adds roles to a user.",
+  "version": "0.0.1",
+  "author": {
+    "name": "John O'Connor",
+    "email": "john@catalyzingconcepts.com"
+  },
+  "contributors": [
+    {
+      "name": "John O'Connor",
+      "email": "john@catalyzingconcepts.com"
+    }
+  ],
+  "dependencies": {
+      "user": "*"
+  }
+}

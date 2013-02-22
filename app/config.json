@@ -1,0 +1,30 @@
+{
+    "environment": "development",
+    "production": {
+        "data": {
+            "provider": "mongodb",
+            "host": "localhost",
+            "database": "johnpersonalwebsite",
+            "username": "john",
+            "password": "johnlovesjessi"
+        }
+    },
+    "development": {
+        "data": {
+            "provider": "mongodb",
+            "host": "54.243.200.231:27017",
+            "database": "johnpersonalwebsite",
+            "username": "john",
+            "password": "johnlovesjessi"
+        },
+        "appSettings": {
+            "uploadDir": "/public/files",
+            "publicDir": "/public",
+            "sessionSecretSalt": "C#RdBL!nK",
+            "viewsDir": "/",
+            "viewEngine": "jade"
+        }
+    },
+    "staging": {
+    }
+}
