@@ -202,7 +202,7 @@ function bootApp(app) {
                     logger.log('trace', "Booted app controllers");
                     bootResources(app, basedir, function() {
                         logger.log('trace', "Booted App Resources");
-                        bootViews(app, '/app', 'app', function() {
+                        bootViews(app, 'app', 'app', function() {
                             logger.log('trace', "Booted App Plugins");
                             bootEventEmitter.emit('bootApp');                            
                         });
@@ -274,7 +274,7 @@ function bootPlugin(app, plugin, completeFn) {
     bootModels(app, __dirname + '/app/plugins/' + plugin, function() {
         bootResources(app, __dirname + '/app/plugins/' + plugin, function() {
             bootControllers(app, __dirname + '/app/plugins/' + plugin, function() {
-                bootViews(app, '/app/plugins/' + plugin, plugin, function() {
+                bootViews(app, 'app/plugins/' + plugin, plugin, function() {
                     completeFn();                    
                 });
             });
@@ -329,7 +329,7 @@ function bootResources(app, basedir, completeFn) {
  
 function bootViews(app, dir, plugin, completeFn) {
     logger.log('trace', 'booting views in ' + plugin);
-    var basedir = __dirname + dir + '/views';
+    var basedir = __dirname + "/" + dir + '/views';
     logger.log('trace', 'Views dir = ' + basedir);
     fs.readdir(basedir, function(err, files) {
         if (err) { 
