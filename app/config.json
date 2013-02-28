@@ -21,7 +21,7 @@
             "uploadDir": "/public/files",
             "publicDir": "/public",
             "sessionSecretSalt": "C#RdBL!nK",
-            "viewsDir": "/",
+            "viewsDir": "/app",
             "viewEngine": "jade"
         }
     },

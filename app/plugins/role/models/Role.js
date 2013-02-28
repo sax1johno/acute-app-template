@@ -5,7 +5,7 @@ var Schema = mongoose.Schema,
     _ = require('underscore'),
     logger = require('ghiraldi-simple-logger');
 
-var Role = registry.get('Role');
+var Role = registry.getSchema('Role');
 
 Role.add({
     title    : String,
@@ -15,7 +15,7 @@ Role.add({
  * Role also modifies the user schema.  Since we don't know whether or not we have one registered,
  * let's create one as a placeholder.
  **/
-var User = registry.get('User');
+var User = registry.getSchema('User');
 logger.log('trace', 'User in role.js = ' + JSON.stringify(User));
 
 User.add({role : {type: ObjectId, ref: 'Role'}});

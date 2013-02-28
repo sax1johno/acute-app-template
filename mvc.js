@@ -20,12 +20,16 @@ var fs = require('fs'),
     locales = require('./locales'),
     flash = require('connect-flash'),
     registry = require('mongoose-schema-registry'),
-    pluginRegistry = require('ghiraldi-plugin-registry'),
+    pluginRegistry = require('ghiraldi-plugin-registry').registry,
+    Plugin = require('ghiraldi-plugin-registry').Plugin,
     mongoose = require('mongoose'),
+    Schema = require('mongoose').Schema,
     EventEmitter = require('events').EventEmitter,
     logger = require('ghiraldi-simple-logger'),
     controllers = [];
-    
+
+// var registry = new ModelRegistry();
+
 var bootEventEmitter = new EventEmitter();
 
 require('coffee-script');
@@ -47,7 +51,7 @@ registry.on('add', function(tag, schema) {
 })
 
 pluginRegistry.on('add', function(tag, plugin) {
-    logger.log('trace', "Plugin added: " + tag + " with values " + JSON.stringify(plugin));
+    logger.log('trace', "Plugin added: " + JSON.stringify(tag) + " with values " + JSON.stringify(plugin));
 })
 
 /**
@@ -119,7 +123,7 @@ function bootFramework(app) {
   
   app.use(locales.init);
 
-  app.set('views', __dirname + '/app/views'); 
+  app.set('views', __dirname + '/'); 
   app.set('view engine', 'jade');
     bootEventEmitter.emit('bootFramework');
 }
@@ -197,8 +201,11 @@ function bootApp(app) {
                 bootControllers(app, basedir, function() {
                     logger.log('trace', "Booted app controllers");
                     bootResources(app, basedir, function() {
-                        logger.log('trace', "Booted app resources");
-                        bootEventEmitter.emit('bootApp');
+                        logger.log('trace', "Booted App Resources");
+                        bootViews(app, '/app', 'app', function() {
+                            logger.log('trace', "Booted App Plugins");
+                            bootEventEmitter.emit('bootApp');                            
+                        });
                     });
                 });
             });
@@ -269,7 +276,7 @@ function bootPlugin(app, plugin, completeFn) {
             bootControllers(app, __dirname + '/app/plugins/' + plugin, function() {
                 bootViews(app, '/app/plugins/' + plugin, plugin, function() {
                     completeFn();                    
-                })
+                });
             });
         });
     });
@@ -282,7 +289,7 @@ function bootPlugin(app, plugin, completeFn) {
  * @param completeFn a function to be executed when booting is complete.
  **/
 function bootResources(app, basedir, completeFn) {
-    logger.log('trace', 'Booting resoureces');
+    logger.log('trace', 'Booting resources');
     if (locales === null || locales === undefined) {
         locales = {};
     }
@@ -321,9 +328,10 @@ function bootResources(app, basedir, completeFn) {
  **/
  
 function bootViews(app, dir, plugin, completeFn) {
-    logger.log('trace', 'booting views');
-    var basedir = __dirname + dir;
-    fs.readdir(basedir + '/views', function(err, files) {
+    logger.log('trace', 'booting views in ' + plugin);
+    var basedir = __dirname + dir + '/views';
+    logger.log('trace', 'Views dir = ' + basedir);
+    fs.readdir(basedir, function(err, files) {
         if (err) { 
             completeFn();
             logger.log('warning', err);
@@ -335,29 +343,31 @@ function bootViews(app, dir, plugin, completeFn) {
             logger.log('warning', "No views were found.");
         } else {
             var filesIndex = files.length;
+            var thisPlugin = new Plugin();
             files.forEach(function(file) {
-                fs.stat(basedir + '/views/' + file, function(err, stats) {
+                fs.stat(basedir + '/' + file, function(err, stats) {
                     if (stats.isFile()) {
                         // if the file has an underscore (_), then the text before the underscore is a 
                         // plugin name, and the text after is the view.  Otherwise, we keep the plugin name.
                         // ie: pluginName_viewName.jade.
-                        logger.log('trace', file);
-                        var viewsRegex = /(.*?)[_]?(.*?)\.jade/;
-                        var match = viewsRegex.exec(file);
-                        var pluginDir = plugin;
-                        var pluginFile = dir + "/" + file;
-                        if (!_.isUndefined(match[2])) {
-                            // There were 2 captures, so the format was pluginName_view.jade
-                            pluginDir = match[1];
-                            pluginFile = '/plugins/' + match[1] + '/views/' + match[2];
-                        }
                         
-                        pluginRegistry.add(pluginDir, pluginFile, function() {
-                            filesIndex--;
-                            if (filesIndex <= 0) {
+                        var viewTagRegex = /(.*)\.jade/;
+                        var viewTagsMatch = viewTagRegex.exec(file);
+                        var pluginDir = plugin;
+                        var pluginFile = dir + "/views/" + file;
+                        console.log(JSON.stringify(viewTagsMatch));
+//                        if (!_.isUndefined(match[2])) {
+//                            // There were 2 captures, so the format was pluginName_view.jade
+//                            pluginDir = match[1];
+//                            pluginFile = '/plugins/' + match[1] + '/views/' + match[2];
+//                        }
+                        thisPlugin.views[viewTagsMatch[1]] = pluginFile;
+                        filesIndex--;
+                        if (filesIndex <= 0) {
+                            pluginRegistry.add(pluginDir, thisPlugin, function() {
                                 completeFn();
-                            }
-                        });
+                            });
+                        }
                     } else {
                         // Ignore directories for now.  Will probably change this later.
                         filesIndex--;
@@ -441,7 +451,9 @@ function registerModels(app) {
         bootEventEmitter.emit('registerModels');
     } else {
         _.each(keys, function(key, index, list) {
-            mongoose.model(key,  registry.get(key));
+            var thisSchema = registry.getSchema(key);
+            thisSchema.__proto__ = Schema.prototype;
+            mongoose.model(key,  thisSchema);
             if (index == _.size(list) - 1) {
                 bootEventEmitter.emit('registerModels');
             }

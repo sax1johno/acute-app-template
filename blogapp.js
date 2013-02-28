@@ -5,7 +5,7 @@
  
  var simpleLogger = require('ghiraldi-simple-logger');
  
- simpleLogger.loglevel = 'debug';
+ simpleLogger.loglevel = 'trace';
  
  simpleLogger.log("debug", "Starting up the BlogApp application");
  

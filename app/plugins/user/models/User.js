@@ -4,7 +4,7 @@
  * username and password, using a SHA1 salted hash.
  **/
 var mongoose = require('mongoose'),
-    Schema = mongoose.Schema,
+    Schema = require('mongoose').Schema,
     ObjectId = Schema.ObjectId,
     passwordUtils = require('../util/PasswordUtils.js'),
     registry = require('mongoose-schema-registry'),
@@ -12,13 +12,23 @@ var mongoose = require('mongoose'),
 
 var SALT_LENGTH = 30;
 
-var User = registry.get('User');
+// var registry = ModelRegistry;
+
+var User = registry.getSchema('User');
+
+if (User instanceof Schema) {
+    logger.log('trace', 'In User, it is a schema.');
+} else {
+    logger.log('trace', 'In User, it is not a schema');
+    logger.log('trace', JSON.stringify(Object.getPrototypeOf(User)));
+}
 
 User.add({
     username        : String,
     password        : {type: String, set: setPassword},
     salt            : String
 });
+
 logger.log('trace', 'User in user.js = ' + JSON.stringify(User));
 
 User.methods.authenticate = authenticate;
