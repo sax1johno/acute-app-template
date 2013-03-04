@@ -90,8 +90,8 @@ exports.boot = function(app){
         });
         
         bootEventEmitter.on('error', function(errors) {
-            bootEventEmitter.emit('bootError', errors)
-        })
+            bootEventEmitter.emit('bootError', errors);
+        });
         
         bootFramework(app);
         
@@ -362,6 +362,7 @@ function bootViews(app, dir, plugin, completeFn) {
 //                            pluginFile = '/plugins/' + match[1] + '/views/' + match[2];
 //                        }
                         thisPlugin.views[viewTagsMatch[1]] = pluginFile;
+                        thisPlugin.basedir = dir;
                         filesIndex--;
                         if (filesIndex <= 0) {
                             pluginRegistry.add(pluginDir, thisPlugin, function() {

@@ -39,4 +39,3 @@ app.on('bootError', function(err) {
 });
 
 mvc.boot(app);
-

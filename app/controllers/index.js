@@ -14,9 +14,6 @@ var plugins = require('ghiraldi-plugin-registry').registry;
 
 var index = function(req, res) {
     var views = plugins.get('app');
-    console.log("plugins = " + JSON.stringify(plugins.log()));
-    console.log("view = " + JSON.stringify(views));
-    
     res.render(plugins.get('app').views['index'], {title: 'Ghiraldi'});
 };
 

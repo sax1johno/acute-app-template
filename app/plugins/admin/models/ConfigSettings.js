@@ -5,22 +5,14 @@ var Schema = mongoose.Schema,
     _ = require('underscore'),
     logger = require('ghiraldi-simple-logger');
 
-var Role = registry.getSchema('Role');
+var ConfigSettings = registry.getSchema('ConfigSettings');
 
-Role.add({
+ConfigSettings.add({
     title    : String
 });
 
-/** 
- * This Role plugin also modifies the user schema.
- **/
-var User = registry.getSchema('User');
-
-User.add({role : {type: ObjectId, ref: 'Role'}});
-
-registry.add('User', User);
+registry.add('ConfigSettings', ConfigSettings);
 
 module.exports = {
-    'Role': Role,
-    'User': User
+    'ConfigSettings': ConfigSettings
 };

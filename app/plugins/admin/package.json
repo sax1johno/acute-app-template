@@ -1,0 +1,18 @@
+{
+  "name": "admin",
+  "description": "Part of the Ghiraldi Core plugins.  This adds a themable admin interface to the application.",
+  "version": "0.0.1",
+  "author": {
+    "name": "John O'Connor",
+    "email": "john@catalyzingconcepts.com"
+  },
+  "contributors": [
+    {
+      "name": "John O'Connor",
+      "email": "john@catalyzingconcepts.com"
+    }
+  ],
+  "dependencies": {
+      "user": "*"
+  }
+}

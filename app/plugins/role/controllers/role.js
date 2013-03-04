@@ -2,21 +2,19 @@ var mongoose = require('mongoose'),
     logger = require('ghiraldi-simple-logger');
 
 // require('../models/User.js');
-var User = mongoose.model('User');
+var Role = mongoose.model('Role');
 var _ = require('underscore');
 
 function get(id, fn) {
-    User.findById(id, fn);
+    Role.findById(id, fn);
 }
 
 var index = function(req, res){
-    logger.log('debug', 'In the user index');
-    User.find({}, function(err, users) {
+    Role.find({}, function(err, users) {
         if (err) {
             logger.log('error', err);
             res.send(err);
         } else {
-            logger.log('debug', 'Users array is ' + JSON.stringify(users));
             // res.render('../views/index.jade', {users: users, title: 'Users', selected: 'users'});
             res.send(users);            
         }
@@ -45,18 +43,17 @@ var edit = function(req, res, next){
 };
 
 var update = function(req, res, next){
-    var thisUser = req.body.user;
     var id = req.params.id;
-    get(id, function(err, user) {
+    get(id, function(err, role) {
         if (err) {
             req.session.messages = {'error': 'Unable to update: ' + err};
             return next(err);
         }
-        var thisUser = req.body.user;
-        _.extend(user, thisUser);
-        user.save(function(error) {
+        var thisRole = req.body.role;
+        _.extend(role, thisRole);
+        role.save(function(error) {
             if (!error) {
-                res.send({'success': 'Successfully updated user  ' + user.username});
+                res.send({'success': 'Successfully updated role  ' + role.title});
             } else {
                 res.send({'error': 'Unable to update: ' + error});
             }
@@ -66,12 +63,12 @@ var update = function(req, res, next){
 };
 
 var create = function(req, res, next) {
-        var thisUser = req.body.user;
-        var addedUser = new User();
-        _.extend(addedUser, thisUser);
-        addedUser.save(function(error) {
+        var thisRole = req.body.role;
+        var addedRole = new Role();
+        _.extend(addedRole, thisRole);
+        addedRole.save(function(error) {
             if (!error) {
-                req.session.messages = {'success': 'Successfully created new user  ' + addedUser.username};
+                req.session.messages = {'success': 'Successfully created new role  ' + addedRole.title};
             } else {
                 req.session.messages = {'error': 'Unable to create: ' + error};
             }
@@ -81,16 +78,16 @@ var create = function(req, res, next) {
 
 var destroy =  function(req, res, next) {
     var id = req.params.id;
-    get(id, function(err, user) {
+    get(id, function(err, role) {
         if (err) return next(err);
-        if (user.username == 'admin') {
-            req.session.messages = {'error': 'Unable to delete the root admin user'};
+        if (role.title == 'admin') {
+            req.session.messages = {'error': 'Unable to delete the root admin role'};
             return res.redirect('back');
         }
-        var deleted = user;
-        user.remove(function(err) {
+        var deleted = role;
+        role.remove(function(err) {
             if (!err) {
-                req.session.messages = {'success': 'Successfully deleted  ' + deleted.username};
+                req.session.messages = {'success': 'Successfully deleted  ' + deleted.title};
                 res.redirect('back');
             }
         });
