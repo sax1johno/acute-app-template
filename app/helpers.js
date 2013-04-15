@@ -12,7 +12,8 @@
 
 var _ = require('underscore');
 var locales = require('../locales');
-var markdown = require('markdown').markdown
+var markdown = require('markdown').markdown;
+var pluginRegistry = require('ghiraldi-plugin-registry').registry;
 
 var navActive = function(req, res, next) {
   res.locals.navActive = function(title, url){
@@ -46,6 +47,10 @@ var helpers = function(req, res, next) {
     res.locals.markdown = md;
     res.locals.ordinal = ordinal;
     res.locals.request = req;
+    res.locals.getView = (function(plugin, view) {
+        return pluginRegistry.get(plugin).views(view);
+    });
+    
     res.locals.hasMessages = (function(req) {
         if (!req.session) {
             return false;

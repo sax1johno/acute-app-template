@@ -3,9 +3,13 @@ html
     head
         block css
             link(rel='stylesheet', href='/css/style.css', type="text/css", media="screen")
+            link(rel='stylesheet', href='/css/admin.css', type="text/css", media="screen")
         block scripts
             script(type="text/javascript", src="/js/base.js")
+            script(type="text/javascript", src="/js/admin.js")
     body
         block messages
+        block header
         block content
+        block footer
     block userScripts

@@ -26,7 +26,8 @@ var fs = require('fs'),
     Schema = require('mongoose').Schema,
     EventEmitter = require('events').EventEmitter,
     logger = require('ghiraldi-simple-logger'),
-    controllers = [];
+    controllers = [],
+    settings = require('./package').ghiraldi;
 
 // var registry = new ModelRegistry();
 
@@ -134,7 +135,7 @@ function bootFramework(app) {
  **/
 function bootConfig(app) {
    logger.log('trace', "Booting application configuration");    
-  config = require(__dirname + '/app/config.json');
+  config = settings;
   
   var environment = process.env.NODE_ENV;
   if (_.isUndefined(environment) || _.isNull(environment)) {
@@ -196,13 +197,13 @@ function bootApp(app) {
    logger.log('trace', "Booting the app");
     var basedir = __dirname + '/app';
     try {
-            bootModels(app, basedir, function() {
+            bootModels(app, basedir, {}, function() {
                 logger.log('trace', "Booted app models");
-                bootControllers(app, basedir, function() {
+                bootControllers(app, basedir, {}, function() {
                     logger.log('trace', "Booted app controllers");
-                    bootResources(app, basedir, function() {
+                    bootResources(app, basedir, {}, function() {
                         logger.log('trace', "Booted App Resources");
-                        bootViews(app, 'app', 'app', function() {
+                        bootViews(app, 'app', 'app', {}, function() {
                             logger.log('trace', "Booted App Plugins");
                             bootEventEmitter.emit('bootApp');                            
                         });
@@ -221,46 +222,72 @@ function bootApp(app) {
  * @param completeFn a function to be executed when booting is complete.
  **/
 function bootPlugins(app, completeFn) {
-   logger.log('trace', "Booting the plugins");    
-    fs.readdir(__dirname + '/app/plugins', function(err, plugins) {
-        if (err) {
-            logger.log("warning", err);
-        } else if (_.isNull(plugins) || _.isUndefined(plugins)) {
-            logger.log('debug', "No plugins found");    
-        } else {
-            try {
-                if (plugins.length == 0) {
-                    bootEventEmitter.emit('bootPlugins');
-                } else {
-                    var index = 0;
-                    var bootThesePlugins = function() {
-                        bootPlugin(app, plugins[index], function() {
-                            logger.log('trace', index);
-                            if (index == _.size(plugins) - 1) {
-                                bootEventEmitter.emit('bootPlugins');
-                            } else {
-                                index++;
-                                bootThesePlugins();
-                            }
-                        });
-                    };
-                    bootThesePlugins(index);
-//                    bootPlugin(app, plugins[index], function() {
-//                        logger.log('trace', index);
-//                        if (index == _.size(plugins) - 1) {
-//                            bootEventEmitter.emit('bootPlugins');
-//                        } else {
-//                            index++;
-//                            bootPlugin(app, plugins[index], this);
-//                        }
-//                    });
-                }
-            } catch (e) {
-                logger.log('warning', e.stack);
-                bootEventEmitter.emit('bootPlugins');
+   logger.log('trace', "Booting the plugins");
+   var plugins = settings.pluginsEnabled;
+   if (_.size(plugins) <= 0) {
+       bootEventEmitter.emit('bootPlugins');
+       completeFn();
+   } else {
+       try {
+           // Manually move through the plugins, waiting until one plugin is loaded
+           // before loading the next.
+           var index = 0;
+           var bootThesePlugins = function() {
+                bootPlugin(app, plugins[index], function() {
+                    logger.log('trace', index);
+                    if (index == _.size(plugins) - 1) {
+                        bootEventEmitter.emit('bootPlugins');
+                        if (!_.isUndefined(completeFn) && !_.isNull(completeFn)) {
+                            completeFn();                            
+                        }
+                    } else {
+                        index++;
+                        bootThesePlugins();
+                    }
+                });
+           };
+           bootThesePlugins();
+        } catch (e) {
+            logger.log('warning', e.stack);
+            bootEventEmitter.emit('bootPlugins');
+            if (!_.isUndefined(completeFn) && !_.isNull(completeFn)) {
+                completeFn();                            
             }
-        }
-    });
+        }   
+    }
+//            try {
+//                if (plugins.length == 0) {
+//                    bootEventEmitter.emit('bootPlugins');
+//                } else {
+//                    var index = 0;
+//                    var bootThesePlugins = function() {
+//                        bootPlugin(app, plugins[index], function() {
+//                            logger.log('trace', index);
+//                            if (index == _.size(plugins) - 1) {
+//                                bootEventEmitter.emit('bootPlugins');
+//                            } else {
+//                                index++;
+//                                bootThesePlugins();
+//                            }
+//                        });
+//                    };
+//                    bootThesePlugins(index);
+////                    bootPlugin(app, plugins[index], function() {
+////                        logger.log('trace', index);
+////                        if (index == _.size(plugins) - 1) {
+////                            bootEventEmitter.emit('bootPlugins');
+////                        } else {
+////                            index++;
+////                            bootPlugin(app, plugins[index], this);
+////                        }
+////                    });
+//                }
+//            } catch (e) {
+//                logger.log('warning', e.stack);
+//                bootEventEmitter.emit('bootPlugins');
+//            }
+//        }
+//    });
 }
 
 /**
@@ -271,15 +298,40 @@ function bootPlugins(app, completeFn) {
  **/
 function bootPlugin(app, plugin, completeFn) {
     logger.log('trace', "Detected plugin: " + plugin);
-    bootModels(app, __dirname + '/app/plugins/' + plugin, function() {
-        bootResources(app, __dirname + '/app/plugins/' + plugin, function() {
-            bootControllers(app, __dirname + '/app/plugins/' + plugin, function() {
-                bootViews(app, 'app/plugins/' + plugin, plugin, function() {
-                    completeFn();                    
+    var pluginLocation = require.resolve(plugin).replace('/index.js', '');
+    logger.log('trace', 'Plugin location = ' + pluginLocation);
+    bootPluginConfig(app, pluginLocation, function(config) {
+        logger.log("trace", "Booting Configuration");
+        logger.log("trace", "Plugin config looks like the following: " + JSON.stringify(config));
+        bootModels(app, pluginLocation, config, function() {
+            logger.log("trace", "Booted models in plugin " + plugin);
+            bootResources(app, pluginLocation, config, function() {
+                logger.log("trace", "Booted resources in plugin " + plugin);            
+                bootControllers(app, pluginLocation, config, function() {
+                    logger.log("trace", "Booted controllers in plugin " + plugin);                            
+                    bootViews(app, pluginLocation, plugin, config, function() {
+                        logger.log("trace", "Booted views in plugin " + plugin);                                                
+                        completeFn();
+                    });
                 });
             });
         });
     });
+}
+
+function bootPluginConfig(app, basedir, completeFn) {
+    try {
+        var pluginConfig = basedir + '/package.json';
+        logger.log("trace", "Plugin config directory = " + pluginConfig);
+        config = require(pluginConfig).ghiraldi;
+        if (!_.isUndefined(config) && !_.isNull(config)) {
+            completeFn(config);
+        } else {
+            completeFn({});
+        }
+    } catch (e) {
+        completeFn({});
+    }
 }
 
 /** 
@@ -288,7 +340,7 @@ function bootPlugin(app, plugin, completeFn) {
  * @param basedir the base directory for the resources.
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootResources(app, basedir, completeFn) {
+function bootResources(app, basedir, config, completeFn) {
     logger.log('trace', 'Booting resources');
     if (locales === null || locales === undefined) {
         locales = {};
@@ -296,19 +348,24 @@ function bootResources(app, basedir, completeFn) {
     var resourcePath = basedir.match(/\/[a-zA-Z0-9.\-]+$/);
     resourcePath = resourcePath.toString().replace(/-.*/, '').replace('/', '');
     fs.readdir(basedir + '/resources', function(err, resourceFiles) {
-        if (resourceFiles !== null && resourceFiles !== undefined) {
-            var resourceFilesIndex = resourceFiles.length;
-            resourceFiles.forEach(function(resource){
-                var res = require(basedir + '/resources/' + resource);
-                resource = resource.replace('.json', '');
-                locales.setLocale(res, resource, resourcePath);
-                resourceFilesIndex--;
-                if (resourceFilesIndex <= 0) {
-                    completeFn();
-                }
-            });
+        if (err) {
+            logger.log('warning', 'No resource files were found');
+            completeFn();
         } else {
-            bootEventEmitter.emit('bootResources');        
+            if (resourceFiles !== null && resourceFiles !== undefined) {
+                var resourceFilesIndex = resourceFiles.length;
+                resourceFiles.forEach(function(resource){
+                    var res = require(basedir + '/resources/' + resource);
+                    resource = resource.replace('.json', '');
+                    locales.setLocale(res, resource, resourcePath);
+                    resourceFilesIndex--;
+                    if (resourceFilesIndex <= 0) {
+                        completeFn();
+                    }
+                });
+            } else {
+                bootEventEmitter.emit('bootResources');        
+            }
         }
     });
 }
@@ -327,9 +384,9 @@ function bootResources(app, basedir, completeFn) {
  * @param completeFn a function to be executed when booting is complete.
  **/
  
-function bootViews(app, dir, plugin, completeFn) {
+function bootViews(app, dir, plugin, config, completeFn) {
     logger.log('trace', 'booting views in ' + plugin);
-    var basedir = __dirname + "/" + dir + '/views';
+    var basedir = dir + '/views';
     logger.log('trace', 'Views dir = ' + basedir);
     fs.readdir(basedir, function(err, files) {
         if (err) { 
@@ -364,8 +421,14 @@ function bootViews(app, dir, plugin, completeFn) {
                         thisPlugin.views[viewTagsMatch[1]] = pluginFile;
                         thisPlugin.basedir = dir;
                         filesIndex--;
+                        var pluginName = "";
                         if (filesIndex <= 0) {
-                            pluginRegistry.add(pluginDir, thisPlugin, function() {
+                            if (config.name) {
+                                pluginName = config.name;
+                            } else {
+                                pluginName = pluginDir;
+                            }
+                            pluginRegistry.add(pluginName, thisPlugin, function() {
                                 completeFn();
                             });
                         }
@@ -388,7 +451,7 @@ function bootViews(app, dir, plugin, completeFn) {
  * @param basedir the base directory for the models.
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootModels(app, basedir, completeFn) {
+function bootModels(app, basedir, config, completeFn) {
     logger.log('trace', 'booting models');
     fs.readdir(basedir + '/models', function(err, files) {
         if (err) { 
@@ -471,10 +534,11 @@ function registerModels(app) {
  * @param basedir the base directory that contains the controllers
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootControllers(app, basedir, completeFn) {
+function bootControllers(app, basedir, config, completeFn) {
     logger.log('trace', 'Booting controllers');
   fs.readdir(basedir + '/controllers', function(err, files){
         if (err) {
+            logger.log('warning', 'unable to boot controllers: ' + err);
             completeFn();
         } else {
             if (!_.isNull(files) && !_.isUndefined(files)) {
@@ -486,7 +550,9 @@ function bootControllers(app, basedir, completeFn) {
                     files.forEach(function(file){
                         filesIndex--;
                         controllers.push({'basedir': basedir, 'file': file});
-                        completeFn();
+                        if (filesIndex <= 0) {
+                            completeFn();                            
+                        }
 //                        bootController(app, basedir, file, function() {
 //                            if (filesIndex <= 0) {
 //                                completeFn();
@@ -494,7 +560,7 @@ function bootControllers(app, basedir, completeFn) {
 //                        });
                     });
                 }
-            };        
+            };
         }
     });
 }
@@ -586,11 +652,15 @@ function bootController(app, basedir, file, completeFn) {
             var routepath;
             basedir = basedir.match(/\/[a-zA-Z0-9.\-]+$/);
             basedir = basedir.toString().replace(/-.*/, '');
-            if (basedir.toString().match(/\/app$/)) {
-                routepath = route.route;
-            } else {
-                routepath = basedir + route.route;
-            }
+//            if (basedir.toString().match(/\/app$/)) {
+//                routepath = route.route;
+//            } else {
+//                routepath = basedir + route.route;
+//            }
+            // Changed over to using absolute routes in controllers.  Allows for
+            // more fine external control of routes at the expense of possible
+            // routing overlap.
+            routepath = route.route;
             logger.log('trace', 'route path = ' + routepath);
             var fn = routeAction(routepath, route.method);
             switch(route.verb) {
