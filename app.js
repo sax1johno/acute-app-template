@@ -38,4 +38,12 @@ app.on('bootError', function(err) {
     simpleLogger.log('error', "Failed to boot: " + JSON.stringify(err.stack));
 });
 
-mvc.boot(app);
+// mvc.boot(app);
+mvc.boot(app).then(function(statusObject) {
+    simpleLogger.log('info', "port = " + statusObject.port);
+    simpleLogger.log('Framework message', "App server listening on port " + statusObject.port);
+    // console.log(statusObject.port);
+    app.listen(statusObject.port);
+}, function(err) {
+    simpleLogger.log('error', "Failed to boot: " + JSON.stringify(err));
+});

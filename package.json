@@ -31,7 +31,8 @@
     "connect-mongodb": ">=1.1.5",
     "connect-flash": "0.1.0",
     "ghiraldi-simple-logger": "*",
-    "ghiraldi-plugin-registry": "*"
+    "ghiraldi-plugin-registry": "*",
+    "q": "*"
   },
   "ghiraldi": {
     "pluginsEnabled": [
