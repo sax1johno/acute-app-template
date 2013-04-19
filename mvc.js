@@ -66,12 +66,17 @@ exports.boot = function(app){
     
     /** Run the boot methods sequentially and return the promise at the end. **/
     bootFramework(app)
-    .then(bootConfig(app))
-    .then(bootPlugins(app))
-    .then(bootApp(app))
-    .then(registerModels(app))
-    .then(registerControllers(app))
     .then(function() {
+        return bootConfig(app);
+    }).then(function() {
+        return bootPlugins(app);
+    }).then(function() {
+        return bootApp(app);
+    }).then(function() {
+        return registerModels(app);
+    }).then(function() {
+        return registerControllers(app);
+    }).then(function() {
         logger.log("trace", "reached the end of the line");
         bootDefer.resolve({'status': status, 'port': port, 'errors': errors, 'config': config});        
     }, function(err) {
@@ -108,7 +113,7 @@ function bootFramework(app) {
     app.set('views', __dirname + '/'); 
     app.set('view engine', 'jade');
     bootEventEmitter.emit('bootFramework');
-    return Q.resolve();
+    return Q();
 }
 
 /**
@@ -159,7 +164,8 @@ function bootConfig(app) {
   }
 
     bootEventEmitter.emit('bootConfig');
-    return Q.resolve();
+   logger.log('trace', "End of boot config");        
+    return Q();
 }
 
 /**
@@ -170,11 +176,20 @@ function bootConfig(app) {
 function bootApp(app) {
     logger.log('trace', "Booting the app");
     var basedir = __dirname + '/app';
-    return 
-        bootModels(app, basedir)
-        .then(bootControllers(app, basedir, {}))
-        .then(bootResources(app, basedir, {}))
-        .then(bootViews(app, 'app', 'app', {}));
+    var bootAppDefer = Q.defer();
+    bootModels(app, basedir)
+        .then(function() {
+            return bootControllers(app, basedir, {});
+        }).then(function() {
+            bootResources(app, basedir, {});
+        }).then(function() {
+            bootViews(app, 'app', 'app', {});
+        }).then(function() {
+            bootAppDefer.resolve();
+        }, function(err) {
+            bootAppDefer.reject(err);
+        }).done();
+    return bootAppDefer.promise;
 }
 
 /**
@@ -194,46 +209,35 @@ function bootPlugins(app, completeFn) {
         // Manually move through the plugins, waiting until one plugin is loaded
         // before loading the next.
         
-        function returnResult() {
-            var index = 0;            
-            var result = Q.resolve(0);
-            plugins.forEach(function(p) {
-                logger.log('trace', 'Plugin = ' + plugins[index]);
-                result = result.then(bootPlugin(app, plugins[index])).then(Q.fcall(++index));
-            });            
-            return result;
-        }
+        // returnResult(0)
+        // .then(function() {
+        //     logger.log('trace', 'Boot plugins complete');
+        //     bootEventEmitter.emit('bootPlugins');
+        //     bootPluginsDefer.resolve();                
+        // }, function(err) {
+        //     logger.log('warning', err.stack);
+        //     bootEventEmitter.emit('bootPlugins');
+        //     bootPluginsDefer.reject(err);                
+        // }).done();                  
+        // 
+        var pluginsResult = Q.resolve();
         
-
-        // funcs.forEach(function (f) {
-        //     result = result.then(f);
-        // });
-
-        // var bootThesePlugins = function(index) {
-        //     logger.log('trace', 'Booting plugin: ' + plugins[index]);
-        //     return bootPlugin(app, plugins[index])
-        //         .then(function() {
-        //             if (index == _.size(plugins) - 1) {
-        //                 return Q.resolve();
-        //             } else {
-        //                 return bootThesePlugins(++index);
-        //             }
-        //         }, function(err) {
-        //             return Q.reject(err);
-        //         })
-        // };
-        // bootThesePlugins(0)
-        returnResult()
-        .then(function() {
+        plugins.forEach(function(p) {
+            logger.log('trace', 'Should boot plugin ' + p);            
+            pluginsResult = pluginsResult.then(function() {
+                return bootPlugin(app, p);
+            });
+        });
+        
+        pluginsResult.then(function() {
             logger.log('trace', 'Boot plugins complete');
             bootEventEmitter.emit('bootPlugins');
-            bootPluginsDefer.resolve();                
+            bootPluginsDefer.resolve();
         }, function(err) {
             logger.log('warning', err.stack);
             bootEventEmitter.emit('bootPlugins');
-            bootPluginsDefer.reject(err);                
-        }).done();  
-        // bootThesePlugins(0);                               
+            bootPluginsDefer.reject(err);                            
+        })
     }
     return bootPluginsDefer.promise;
 }
@@ -248,13 +252,16 @@ function bootPlugin(app, plugin, completeFn) {
     var bootPluginDefer = Q.defer();
     logger.log('trace', "Detected plugin: " + plugin);
     var pluginLocation = require.resolve(plugin).replace('/index.js', '');
-    logger.log('trace', 'Plugin location = ' + pluginLocation);
     bootPluginConfig(app, pluginLocation)
-        .then(bootModels(app, pluginLocation, config))
-        .then(bootResources(app, pluginLocation, config))
-        .then(bootControllers(app, pluginLocation, config))
-        .then(bootViews(app, pluginLocation, plugin, config))
         .then(function() {
+            return bootModels(app, pluginLocation, config);
+        }).then(function() {
+            return bootResources(app, pluginLocation, config);
+        }).then(function() {
+            return bootControllers(app, pluginLocation, config);
+        }).then(function() {
+            bootViews(app, pluginLocation, plugin, config);       
+        }).then(function() {
             bootPluginDefer.resolve();
         }, function(err) {
             bootPluginDefer.reject(err);
@@ -405,40 +412,79 @@ function bootViews(app, dir, plugin, config, completeFn) {
 function bootModels(app, basedir, config, completeFn) {
     var bootModelsDefer = Q.defer();
     logger.log('trace', 'booting models for ' + basedir);
-    fs.readdir(basedir + '/models', function(err, files) {
-        if (err) { 
-            logger.log('warning', err);
-            bootModelsDefer.resolve(err);
-        } else if (_.isNull(files) || _.isUndefined(files)) {
-            logger.log('warning', "No models were found.");
-            bootModelsDefer.resolve();
-            // completeFn();            
-        } else if (files.length <= 0) {
-            logger.log('warning', "No models were found.");
-            // completeFn();            
-            bootModelsDefer.resolve();
-        } else {
-            var filesIndex = files.length;
-            files.forEach(function(file) {
-                fs.stat(basedir + '/models/' + file, function(err, stats) {
-                    if (stats.isFile()) {
-                        logger.log('trace', "model: " + file);
-                        bootModel(app, basedir, file, function() {
+    Q.nfcall(fs.readdir, basedir + '/models')
+        .then(function(files) {
+            if (_.isNull(files) || _.isUndefined(files)) {
+                logger.log('warning', "No models were found.");
+                bootModelsDefer.resolve();
+            } else if (files.length <= 0) {
+                logger.log('warning', "No models were found.");
+                // completeFn();            
+                bootModelsDefer.resolve();    
+            } else {
+                var filesIndex = files.length;
+                files.forEach(function(file) {
+                    fs.stat(basedir + '/models/' + file, function(err, stats) {
+                        if (err) {
+                            logger.log('trace', "error stating file " + file + ": " + err);
+                            bootModelsDefer.resolve();
+                        }
+                        if (stats.isFile()) {
+                            logger.log('trace', "model: " + file);
+                            bootModel(app, basedir, file, function() {
+                                filesIndex--;
+                                if (filesIndex <= 0) {
+                                    bootModelsDefer.resolve();
+                                }
+                            });
+                        } else {
                             filesIndex--;
                             if (filesIndex <= 0) {
                                 bootModelsDefer.resolve();
                             }
-                        });
-                    } else {
-                        filesIndex--;
-                        if (filesIndex <= 0) {
-                            bootModelsDefer.resolve();
                         }
-                    }
+                    });
                 });
-            });
-        }
-    });
+                logger.log("trace", "files = " + files.join());
+            }
+        }, function(err) {
+            logger.log('warning', err);
+            bootModelsDefer.resolve();
+        });
+    // fs.readdir(basedir + '/models', function(err, files) {
+    //     if (err) { 
+    //         logger.log('warning', err);
+    //         bootModelsDefer.resolve(err);
+    //     } else if (_.isNull(files) || _.isUndefined(files)) {
+    //         logger.log('warning', "No models were found.");
+    //         bootModelsDefer.resolve();
+    //         // completeFn();            
+    //     } else if (files.length <= 0) {
+    //         logger.log('warning', "No models were found.");
+    //         // completeFn();            
+    //         bootModelsDefer.resolve();
+    //     } else {
+    //         var filesIndex = files.length;
+    //         files.forEach(function(file) {
+    //             fs.stat(basedir + '/models/' + file, function(err, stats) {
+    //                 if (stats.isFile()) {
+    //                     logger.log('trace', "model: " + file);
+    //                     bootModel(app, basedir, file, function() {
+    //                         filesIndex--;
+    //                         if (filesIndex <= 0) {
+    //                             bootModelsDefer.resolve();
+    //                         }
+    //                     });
+    //                 } else {
+    //                     filesIndex--;
+    //                     if (filesIndex <= 0) {
+    //                         bootModelsDefer.resolve();
+    //                     }
+    //                 }
+    //             });
+    //         });
+    //     }
+    // });
     return bootModelsDefer.promise;
 }
 
