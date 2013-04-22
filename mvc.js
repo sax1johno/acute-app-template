@@ -333,7 +333,6 @@ function bootResources(app, basedir, config, completeFn) {
  * in express.js.
  * @param completeFn a function to be executed when booting is complete.
  **/
- 
 function bootViews(app, dir, plugin, config, completeFn) {
     var bootViewsDefer = Q.defer();
     logger.log('trace', 'booting views in ' + plugin);

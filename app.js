@@ -26,19 +26,14 @@ var mvc = require('./mvc');
 var bootEventListener = mvc.events();
 
 app.on('boot', function(port) {
-    simpleLogger.log('info', "port = " + port);
-    // This was turned into a warning so it shows in the default log context (which is debug).  This isn't
-    // a warning so much as it's a high priority informational message.  May warrant a new log context like
-    // framework-message (which is above warning and below error);
-    simpleLogger.log('Framework message', "App server listening on port " + port);
     app.listen(port);
+    simpleLogger.log('Framework message', "App server listening on port " + port);
 });
 
 app.on('bootError', function(err) {
     simpleLogger.log('error', "Failed to boot: " + JSON.stringify(err.stack));
 });
 
-// mvc.boot(app);
 mvc.boot(app).then(function(statusObject) {
     simpleLogger.log('info', "port = " + statusObject.port);
     simpleLogger.log('Framework message', "App server listening on port " + statusObject.port);
