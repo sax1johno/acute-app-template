@@ -176,14 +176,23 @@ function bootConfig(app) {
 function bootApp(app) {
     logger.log('trace', "Booting the app");
     var basedir = __dirname + '/app';
+    var appPlugin = new Plugin();
+    appPlugin.baseDir = basedir;
+    appPlugin.name = 'app';
     var bootAppDefer = Q.defer();
-    bootModels(app, basedir)
-        .then(function() {
-            return bootControllers(app, basedir, {});
+    bootPluginConfig(app, __dirname)
+        .then(function(pConfig) {
+            config = pConfig;
+            return bootModels(app, appPlugin, config);
         }).then(function() {
-            bootResources(app, basedir, {});
+            return bootControllers(app, appPlugin, {});
         }).then(function() {
-            bootViews(app, 'app', 'app', {});
+            return bootResources(app, appPlugin, {});
+        }).then(function() {
+            return bootViews(app, appPlugin, {});
+        }).then(function() {
+            /** The last step is to register the booted plugin with the plugin registry. **/
+            return registerPlugin(app, appPlugin, {});
         }).then(function() {
             bootAppDefer.resolve();
         }, function(err) {
@@ -206,30 +215,17 @@ function bootPlugins(app, completeFn) {
        logger.log('trace', 'Size of plugins <= 0');
        bootPluginsDefer.resolve();
    } else {
-        // Manually move through the plugins, waiting until one plugin is loaded
-        // before loading the next.
-        
-        // returnResult(0)
-        // .then(function() {
-        //     logger.log('trace', 'Boot plugins complete');
-        //     bootEventEmitter.emit('bootPlugins');
-        //     bootPluginsDefer.resolve();                
-        // }, function(err) {
-        //     logger.log('warning', err.stack);
-        //     bootEventEmitter.emit('bootPlugins');
-        //     bootPluginsDefer.reject(err);                
-        // }).done();                  
-        // 
-        var pluginsResult = Q.resolve();
-        
-        plugins.forEach(function(p) {
-            logger.log('trace', 'Should boot plugin ' + p);            
-            pluginsResult = pluginsResult.then(function() {
-                return bootPlugin(app, p);
+        var pluginResult = Q.resolve();
+        function loadPlugins() {
+            plugins.forEach(function(p) {
+                pluginResult = pluginResult.then(function() {
+                    return bootPlugin(app, p);
+                });
             });
-        });
+            return pluginResult
+        }
         
-        pluginsResult.then(function() {
+        loadPlugins().then(function() {
             logger.log('trace', 'Boot plugins complete');
             bootEventEmitter.emit('bootPlugins');
             bootPluginsDefer.resolve();
@@ -245,25 +241,37 @@ function bootPlugins(app, completeFn) {
 /**
  * Boots up a plugin.
  * @param app the application server.
- * @param plugin the plugin
+ * @param plugin the plugin file name
  * @param completeFn a function to be executed when booting is complete.
  **/
 function bootPlugin(app, plugin, completeFn) {
     var bootPluginDefer = Q.defer();
     logger.log('trace', "Detected plugin: " + plugin);
-    var pluginLocation = require.resolve(plugin).replace('/index.js', '');
-    bootPluginConfig(app, pluginLocation)
-        .then(function() {
-            return bootModels(app, pluginLocation, config);
+    var thisPlugin = new Plugin();
+    var pluginLocation = require.resolve(plugin);
+    logger.log('trace', 'Plugin located at ' + pluginLocation);
+    thisPlugin.name = plugin;
+    thisPlugin.requireFile = pluginLocation;
+    thisPlugin.baseDir = pluginLocation.replace('/index.js', '');
+    var config = {};
+    bootPluginConfig(app, thisPlugin.baseDir)
+        .then(function(pConfig) {
+            config = pConfig;
+            return bootModels(app, thisPlugin, config);
         }).then(function() {
-            return bootResources(app, pluginLocation, config);
+            return bootResources(app, thisPlugin, config);
         }).then(function() {
-            return bootControllers(app, pluginLocation, config);
+            return bootControllers(app, thisPlugin, config);
         }).then(function() {
-            bootViews(app, pluginLocation, plugin, config);       
+            return bootViews(app, thisPlugin, config);
         }).then(function() {
+            /** The last step is to register the booted plugin with the plugin registry. **/
+            return registerPlugin(app, thisPlugin, config);
+        }).then(function() {
+            logger.log('trace', 'Done booting plugin ' + thisPlugin.name);
             bootPluginDefer.resolve();
         }, function(err) {
+            logger.error('trace', 'There was an error booting a plugin: Plugin = ' + thisPlugin.name + ', ' + err);
             bootPluginDefer.reject(err);
         }).done();
     return bootPluginDefer.promise;
@@ -286,7 +294,8 @@ function bootPluginConfig(app, basedir, completeFn) {
  * @param basedir the base directory for the resources.
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootResources(app, basedir, config, completeFn) {
+function bootResources(app, plugin, config, completeFn) {
+    var basedir = plugin.baseDir;
     var bootResourcesDefer = Q.defer();
     logger.log('trace', 'Booting resources for ' + basedir);
     if (locales === null || locales === undefined) {
@@ -333,10 +342,10 @@ function bootResources(app, basedir, config, completeFn) {
  * in express.js.
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootViews(app, dir, plugin, config, completeFn) {
+function bootViews(app, plugin, config, completeFn) {
     var bootViewsDefer = Q.defer();
-    logger.log('trace', 'booting views in ' + plugin);
-    var basedir = dir + '/views';
+    logger.log('trace', 'booting views in ' + plugin.name);
+    var basedir = plugin.baseDir + '/views';
     logger.log('trace', 'Views dir = ' + basedir);
     fs.readdir(basedir, function(err, files) {
         if (err) {
@@ -353,7 +362,6 @@ function bootViews(app, dir, plugin, config, completeFn) {
             bootViewsDefer.resolve();
         } else {
             var filesIndex = files.length;
-            var thisPlugin = new Plugin();
             files.forEach(function(file) {
                 fs.stat(basedir + '/' + file, function(err, stats) {
                     if (err) {
@@ -367,32 +375,28 @@ function bootViews(app, dir, plugin, config, completeFn) {
                         var viewTagRegex = /(.*)\.jade/;
                         var viewTagsMatch = viewTagRegex.exec(file);
                         var pluginDir = plugin;
-                        var pluginFile = dir + "/views/" + file;
+                        // var pluginFile = basedir + "/views/" + file;
+                        var pluginFile = basedir + '/' + file;
                         console.log(JSON.stringify(viewTagsMatch));
+                        /** TODO: Implement the underscore matching **/
 //                        if (!_.isUndefined(match[2])) {
 //                            // There were 2 captures, so the format was pluginName_view.jade
 //                            pluginDir = match[1];
 //                            pluginFile = '/plugins/' + match[1] + '/views/' + match[2];
 //                        }
-                        thisPlugin.views[viewTagsMatch[1]] = pluginFile;
-                        thisPlugin.basedir = dir;
+                        plugin.views[viewTagsMatch[1]] = pluginFile;
                         filesIndex--;
                         var pluginName = "";
                         if (filesIndex <= 0) {
-                            if (config.name) {
-                                pluginName = config.name;
-                            } else {
-                                pluginName = pluginDir;
-                            }
-                            pluginRegistry.add(pluginName, thisPlugin, function() {
-                                bootViewsDefer.resolve();
-                            });
+                            bootViewsDefer.resolve();
                         }
                     } else {
-                        // Ignore directories for now.  Will probably change this later.
+                        // At some point, we should manage directories the same way
+                        // we manage underscores.  For now, just ignore them.
                         filesIndex--;
                         if (filesIndex <= 0) {
-                            completeFn();
+                            bootViewsDefer.resolve();                            
+                            // completeFn();
                         }
                     }
                 });
@@ -408,8 +412,9 @@ function bootViews(app, dir, plugin, config, completeFn) {
  * @param basedir the base directory for the models.
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootModels(app, basedir, config, completeFn) {
+function bootModels(app, plugin, config, completeFn) {
     var bootModelsDefer = Q.defer();
+    var basedir = plugin.baseDir;
     logger.log('trace', 'booting models for ' + basedir);
     Q.nfcall(fs.readdir, basedir + '/models')
         .then(function(files) {
@@ -529,6 +534,32 @@ function registerModels(app) {
     return registerModelsDefer.promise;
 }
 
+/**
+ * Registers a plugin that has been completely booted.
+ * Called as the last item in bootPlugins if nothing has
+ * failed.
+ **/
+function registerPlugin(app, plugin, config) {
+    logger.log("trace", "Ready to register plugin");
+    var registerPluginDeferred = Q.defer();
+    var pluginName;
+    if (config.name) {
+        pluginName = config.name;
+    } else {
+        pluginName = plugin.name;
+    }
+    pluginRegistry.add(pluginName, plugin, function() {
+        logger.log('trace', 'Plugin should have been registered');
+        registerPluginDeferred.resolve();  
+    }, function(err) {
+        logger.log('error', 'There was an error registering the plugin ' + plugin.name + ': ' + err);
+        registerPluginDeferred.reject(err);
+    });
+    
+    return registerPluginDeferred.promise;
+}
+
+
 // Bootstrap controllers
 
 /**
@@ -538,8 +569,9 @@ function registerModels(app) {
  * @param basedir the base directory that contains the controllers
  * @param completeFn a function to be executed when booting is complete.
  **/
-function bootControllers(app, basedir, config, completeFn) {
+function bootControllers(app, plugin, config, completeFn) {
     var bootControllersDefer = Q.defer();
+    var basedir = plugin.baseDir;
     logger.log('trace', 'Booting controllers for ' + basedir);
     fs.readdir(basedir + '/controllers', function(err, files){
         if (err) {
