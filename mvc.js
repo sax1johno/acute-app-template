@@ -177,6 +177,8 @@ function bootApp(app) {
     logger.log('trace', "Booting the app");
     var basedir = __dirname + '/app';
     var appPlugin = new Plugin();
+    appPlugin.name = 'app';
+    appPlugin.fileName = '';
     appPlugin.baseDir = basedir;
     appPlugin.name = 'app';
     var bootAppDefer = Q.defer();
@@ -251,7 +253,7 @@ function bootPlugin(app, plugin, completeFn) {
     var pluginLocation = require.resolve(plugin);
     logger.log('trace', 'Plugin located at ' + pluginLocation);
     thisPlugin.name = plugin;
-    thisPlugin.requireFile = pluginLocation;
+    thisPlugin.fileName = pluginLocation;
     thisPlugin.baseDir = pluginLocation.replace('/index.js', '');
     var config = {};
     bootPluginConfig(app, thisPlugin.baseDir)
@@ -377,7 +379,7 @@ function bootViews(app, plugin, config, completeFn) {
                         var pluginDir = plugin;
                         // var pluginFile = basedir + "/views/" + file;
                         var pluginFile = basedir + '/' + file;
-                        console.log(JSON.stringify(viewTagsMatch));
+                        logger.log('trace', JSON.stringify(viewTagsMatch));
                         /** TODO: Implement the underscore matching **/
 //                        if (!_.isUndefined(match[2])) {
 //                            // There were 2 captures, so the format was pluginName_view.jade
@@ -550,6 +552,7 @@ function registerPlugin(app, plugin, config) {
     }
     pluginRegistry.add(pluginName, plugin, function() {
         logger.log('trace', 'Plugin should have been registered');
+        // logger.log('trace', 'Plugin registry now looks like the following: ' + JSON.stringify(pluginRegistry));
         registerPluginDeferred.resolve();  
     }, function(err) {
         logger.log('error', 'There was an error registering the plugin ' + plugin.name + ': ' + err);
