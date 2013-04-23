@@ -61,7 +61,7 @@
         "appSettings": {
             "uploadDir": "/public/files",
             "publicDir": "/public",
-            "sessionSecretSalt": "C#RdBL!nK",
+            "sessionSecretSalt": "J0HnsP3rS0n4lW3b51te",
             "viewsDir": "/app",
             "viewEngine": "jade"
         }
