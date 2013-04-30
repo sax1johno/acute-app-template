@@ -20,18 +20,18 @@
   "dependencies": {
     "express": ">=3.0.3",
     "jade": "*",
-    "mongoose": "3.3.1",
-    "mongoose-schema-registry": "*",
     "underscore": "*",
     "coffee-script": ">=1.3.3",
     "nodeunit": ">=0.7.4",
     "sprintf": ">=0.1.1",
     "markdown": ">=0.4.0",
-    "mongodb": ">=1.1.3",
-    "connect-mongodb": ">=1.1.5",
     "connect-flash": "0.1.0",
     "ghiraldi-simple-logger": "*",
     "ghiraldi-plugin-registry": "*",
+    "ghiraldi-schema-registry": "*",
+    "ghiraldi-base-admin": "*",
+    "ghiraldi-base-role": "*",
+    "ghiraldi-base-admin": "*",
     "q": "*"
   },
   "ghiraldi": {
@@ -40,23 +40,27 @@
         "ghiraldi-base-role",
         "ghiraldi-base-admin"
     ],
-    "environment": "development",
+    "environment": "sandbox",
     "production": {
         "data": {
             "provider": "mongodb",
-            "host": "localhost",
-            "database": "johnpersonalwebsite",
-            "username": "john",
-            "password": "johnlovesjessi"
+            "settings": {
+                "host": "localhost",
+                "database": "johnpersonalwebsite",
+                "username": "john",
+                "password": "johnlovesjessi"
+            }
         }
     },
     "development": {
         "data": {
             "provider": "mongodb",
-            "host": "54.243.200.231:27017",
-            "database": "johnpersonalwebsite",
-            "username": "john",
-            "password": "johnlovesjessi"
+            "settings": {
+                "host": "54.243.200.231:27017",
+                "database": "johnpersonalwebsite",
+                "username": "john",
+                "password": "johnlovesjessi"   
+            }
         },
         "appSettings": {
             "uploadDir": "/public/files",
@@ -66,7 +70,17 @@
             "viewEngine": "jade"
         }
     },
-    "staging": {
+    "sandbox": {
+        "data": {
+            "provider": "memory"
+        },
+        "appSettings": {
+            "uploadDir": "/public/files",
+            "publicDir": "/public",
+            "sessionSecretSalt": "J0HnsP3rS0n4lW3b51te",
+            "viewsDir": "/app",
+            "viewEngine": "jade"
+        }
     }
   }
 }

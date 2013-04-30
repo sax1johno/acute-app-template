@@ -20,11 +20,13 @@ var fs = require('fs'),
     _ = require('underscore'),
     locales = require('./locales'),
     flash = require('connect-flash'),
-    registry = require('mongoose-schema-registry'),
+    // registry = require('mongoose-schema-registry'),
+    SchemaRegistry = require('ghiraldi-schema-registry'),
+    registry, // will be instantiated with the correct data store.
     pluginRegistry = require('ghiraldi-plugin-registry').registry,
     Plugin = require('ghiraldi-plugin-registry').Plugin,
-    mongoose = require('mongoose'),
-    Schema = require('mongoose').Schema,
+    // mongoose = require('mongoose'),
+    // Schema = require('mongoose').Schema,
     EventEmitter = require('events').EventEmitter,
     logger = require('ghiraldi-simple-logger'),
     controllers = [],
@@ -48,10 +50,6 @@ exports.events = function() {
     return bootEventEmitter;
 };
 
-registry.on('add', function(tag, schema) {
-    logger.log('trace', "Schema entry added: " + tag + " " + JSON.stringify(schema));
-})
-
 pluginRegistry.on('add', function(tag, plugin) {
     logger.log('trace', "Plugin added: " + JSON.stringify(tag) + " with values " + JSON.stringify(plugin));
 })
@@ -68,6 +66,8 @@ exports.boot = function(app){
     bootFramework(app)
     .then(function() {
         return bootConfig(app);
+    }).then(function() {
+        return bootData(app);
     }).then(function() {
         return bootPlugins(app);
     }).then(function() {
@@ -514,19 +514,58 @@ function bootModel(app, basedir, file, completeFn) {
     });
 }
 
+// function registerModels(app) {
+//     var registerModelsDefer = Q.defer();
+//     logger.log('trace', 'Registering models');
+//     var keys = registry.getKeys();
+//     logger.log('trace', "keys = " + JSON.stringify(keys));
+//     if (_.isEmpty(keys)) {
+//         bootEventEmitter.emit('registerModels');
+//         registerModelsDefer.resolve();
+//     } else {
+//         _.each(keys, function(key, index, list) {
+//             var thisSchema = registry.getSchema(key);
+//             thisSchema.__proto__ = Schema.prototype;
+//             mongoose.model(key,  thisSchema);
+//             if (index == _.size(list) - 1) {
+//                 bootEventEmitter.emit('registerModels');
+//                 registerModelsDefer.resolve();
+//             }
+//         });
+//     }
+//     return registerModelsDefer.promise;
+// }
+
+/** 
+ * Turn the schema registry objects into data models that are backed by
+ * JugglingDB schemas.  Eventually I'll make this more generic so users can
+ * choose their schema registry system.
+ **/
 function registerModels(app) {
     var registerModelsDefer = Q.defer();
     logger.log('trace', 'Registering models');
-    var keys = registry.getKeys();
+    
+    // Models have the following syntax: 
+    // Model.property = a property of the model.
+    // Model.methods.method = a method on the model.
+    // Model.validators.method = validator on the model.
+    // Model.relationships.hasMany = a hasMany relationship definition.
+    
+    var keys = registry.getSchemaNames();
     logger.log('trace', "keys = " + JSON.stringify(keys));
     if (_.isEmpty(keys)) {
         bootEventEmitter.emit('registerModels');
         registerModelsDefer.resolve();
     } else {
         _.each(keys, function(key, index, list) {
-            var thisSchema = registry.getSchema(key);
-            thisSchema.__proto__ = Schema.prototype;
-            mongoose.model(key,  thisSchema);
+            registry.register(key);
+            // _.each(thisSchema, function(element, key, list) {
+            //     if (key == 'methods') {
+            //         // register methods here.
+            //     } else {
+            //         registry.register(key);
+            //     }
+            // });
             if (index == _.size(list) - 1) {
                 bootEventEmitter.emit('registerModels');
                 registerModelsDefer.resolve();
@@ -634,7 +673,7 @@ function registerControllers(app, completeFn) {
 }
 
 /**
- * Boot data into the framwork using the config.json configuration file.  Currently only supports mongodb.
+ * Boot data into the framwork using the config.json configuration file.
  * @param app the application server
  * @param completeFn a function to be executed when booting is complete.
  **/
@@ -642,25 +681,24 @@ function bootData(app, completeFn) {
     var bootDataDefer = Q.defer();
     logger.log("trace", "booting data");
     if (!_.isUndefined(config.data) && !_.isNull(config.data)) {
-        if (config.data.provider === 'mongodb') {
-            var mongoose = require('mongoose');
-            var connectionString = "mongodb://";
-            if (config.data.host && config.data.database) {
-                if (config.data.username && config.data.password) {
-                    connectionString += config.data.username + ":" + config.data.password + "@"
-                }
-                connectionString += config.data.host + "/" + config.data.database;
-                logger.log("trace", "connection string = " + connectionString);
-                mongoose.connect(connectionString);
-            }
+        try {
+            registry = new SchemaRegistry(config.data.provider, config.data.settings);
+            /** 
+             * Add an event listener to the "on" function, so developers can see the trace messages
+             * as schemas are added to the registry.
+             **/
+            registry.on('add', function(tag, schema) {
+                logger.log('trace', "Schema entry added: " + tag + " " + JSON.stringify(schema));
+            })
+            logger.log('trace', 'Done booting data');
             bootDataDefer.resolve();            
-        } else {
-            logger.log('warning', 'Incompatible data provider, or no data provider was found.');
-            bootDataDefer.resolve();
+        } catch (e) {
+            logger.log('trace', 'Unable to set adapter: ' + e)
+            bootDataDefer.reject(e);            
         }
     } else {
-        logger.log('warning', 'No data source configuration was found.')
-        bootDataDefer.resolve();
+        logger.log('error', 'No data source configuration was found.  Make sure you have a data provider for your environment.')
+        bootDataDefer.reject();
     }
     bootEventEmitter.emit('bootData');
     return bootDataDefer.promise;
