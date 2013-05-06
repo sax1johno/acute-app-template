@@ -19,11 +19,7 @@ var simpleLogger = require('ghiraldi-simple-logger');
 // Create a special framework-level log to show important messages from the framework.
 simpleLogger.LOGLEVELS['Framework message'] = 101;
 
-// Boot the MVC framework and start listening if the boot completes successfully.
 var mvc = require('./mvc');
-
-// An example of getting the bootEventListener - use this to access the events emitted during the boot process.
-var bootEventListener = mvc.events();
 
 app.on('boot', function(port) {
     app.listen(port);
@@ -37,7 +33,6 @@ app.on('bootError', function(err) {
 mvc.boot(app).then(function(statusObject) {
     simpleLogger.log('info', "port = " + statusObject.port);
     simpleLogger.log('Framework message', "App server listening on port " + statusObject.port);
-    // console.log(statusObject.port);
     app.listen(statusObject.port);
 }, function(err) {
     simpleLogger.log('error', "Failed to boot: " + JSON.stringify(err));

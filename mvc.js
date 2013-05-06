@@ -30,7 +30,8 @@ var fs = require('fs'),
     EventEmitter = require('events').EventEmitter,
     logger = require('ghiraldi-simple-logger'),
     controllers = [],
-    settings = require('./package').ghiraldi;
+    settings = require('./package').ghiraldi,
+    util = require('util');
 
 // var registry = new ModelRegistry();
 
@@ -45,14 +46,15 @@ var status = false,
     port = process.env.PORT,
     errors,
     config;
+    
 
 exports.events = function() {
     return bootEventEmitter;
 };
 
 pluginRegistry.on('add', function(tag, plugin) {
-    logger.log('trace', "Plugin added: " + JSON.stringify(tag) + " with values " + JSON.stringify(plugin));
-})
+    logger.log('trace', "Plugin added: " + JSON.stringify(tag) + " with values " + util.inspect(plugin));
+});
 
 /**
  * The main boot function.  This boots the application and catches all startup errors.
@@ -175,16 +177,14 @@ function bootConfig(app) {
  **/
 function bootApp(app) {
     logger.log('trace', "Booting the app");
-    var basedir = __dirname + '/app';
-    var appPlugin = new Plugin();
-    appPlugin.name = 'app';
-    appPlugin.fileName = '';
-    appPlugin.baseDir = basedir;
-    appPlugin.name = 'app';
     var bootAppDefer = Q.defer();
-    bootPluginConfig(app, __dirname)
-        .then(function(pConfig) {
+    var appPlugin;
+    bootPluginConfig(app, 'app')
+        .then(function(pAppPlugin, pConfig) {
             config = pConfig;
+            appPlugin = pAppPlugin;
+            return bootPluginConfigFunctions(app, appPlugin, config);
+        }).then(function(config) {    
             return bootModels(app, appPlugin, config);
         }).then(function() {
             return bootControllers(app, appPlugin, {});
@@ -192,7 +192,8 @@ function bootApp(app) {
             return bootResources(app, appPlugin, {});
         }).then(function() {
             return bootViews(app, appPlugin, {});
-        }).then(function() {
+        }).then(function(pPlugin) {
+            appPlugin = pPlugin;
             /** The last step is to register the booted plugin with the plugin registry. **/
             return registerPlugin(app, appPlugin, {});
         }).then(function() {
@@ -235,7 +236,7 @@ function bootPlugins(app, completeFn) {
             logger.log('warning', err.stack);
             bootEventEmitter.emit('bootPlugins');
             bootPluginsDefer.reject(err);                            
-        })
+        });
     }
     return bootPluginsDefer.promise;
 }
@@ -249,16 +250,15 @@ function bootPlugins(app, completeFn) {
 function bootPlugin(app, plugin, completeFn) {
     var bootPluginDefer = Q.defer();
     logger.log('trace', "Detected plugin: " + plugin);
-    var thisPlugin = new Plugin();
-    var pluginLocation = require.resolve(plugin);
-    logger.log('trace', 'Plugin located at ' + pluginLocation);
-    thisPlugin.name = plugin;
-    thisPlugin.fileName = pluginLocation;
-    thisPlugin.baseDir = pluginLocation.replace('/index.js', '');
+    var thisPlugin = null;
     var config = {};
-    bootPluginConfig(app, thisPlugin.baseDir)
-        .then(function(pConfig) {
+    bootPluginConfig(app, plugin)
+        .then(function(pPlugin, pConfig) {
+            logger.log('trace', 'Finally, thisPlugin looks like ' + util.inspect(pPlugin));
+            thisPlugin = pPlugin;
             config = pConfig;
+            return bootPluginConfigFunctions(app, thisPlugin, config);
+        }).then(function(config) {
             return bootModels(app, thisPlugin, config);
         }).then(function() {
             return bootResources(app, thisPlugin, config);
@@ -266,29 +266,87 @@ function bootPlugin(app, plugin, completeFn) {
             return bootControllers(app, thisPlugin, config);
         }).then(function() {
             return bootViews(app, thisPlugin, config);
-        }).then(function() {
+        }).then(function(pPlugin) {
+            thisPlugin = pPlugin;
+            logger.log('trace', 'thisPlugin in the final register is now ' + util.inspect(thisPlugin));
             /** The last step is to register the booted plugin with the plugin registry. **/
             return registerPlugin(app, thisPlugin, config);
         }).then(function() {
             logger.log('trace', 'Done booting plugin ' + thisPlugin.name);
             bootPluginDefer.resolve();
         }, function(err) {
-            logger.error('trace', 'There was an error booting a plugin: Plugin = ' + thisPlugin.name + ', ' + err);
+            logger.log('trace', 'There was an error booting a plugin: Plugin = ' + thisPlugin.name + ', ' + err);
             bootPluginDefer.reject(err);
         }).done();
     return bootPluginDefer.promise;
 }
 
-function bootPluginConfig(app, basedir, completeFn) {
-    var pluginConfig = basedir + '/package.json';
-    logger.log("trace", "Plugin config directory = " + pluginConfig);
-    config = require(pluginConfig).ghiraldi;
-    if (!_.isUndefined(config) && !_.isNull(config)) {
-        return Q.resolve(config);
+/**
+ * Boot the plugin configuration file for configuration settings.
+ * @param app the express.js app.
+ * @param basedir the base directory of this plugin
+**/
+function bootPluginConfig(app, plugin, completeFn) {
+    logger.log('trace', 'Booting plugin config for ' + plugin);
+    var thisPlugin = new Plugin();
+    logger.log('trace', 'Plugin looks like ' + util.inspect(thisPlugin));
+    var pluginLocation;
+    var pluginConfig;
+    
+    // The "app" is a special case plugin that won't resolve.
+    if (plugin == 'app') {
+        pluginLocation = __dirname + '/app';
+        thisPlugin.baseDir = pluginLocation;
+        
+        // In this special case, the package info for the app is kept in the
+        // root.
+        pluginConfig = __dirname + "/package.json";
     } else {
-        return Q.resolve({});
+        pluginLocation = require.resolve(plugin);
+        thisPlugin.baseDir = pluginLocation.replace('/index.js', '');
+        pluginConfig = thisPlugin.baseDir + '/package.json';         
+    }
+    thisPlugin.fileName = pluginLocation;
+
+    // Load the configuration from package.json.
+    var config = require(pluginConfig).ghiraldi;
+    
+    // Now set up the basic plugin settings from config.
+    thisPlugin.name = config.name || plugin;
+    if (!_.isUndefined(config) && !_.isNull(config)) {
+        return Q.resolve(thisPlugin, config);
+    } else {
+        return Q.resolve(thisPlugin);
     }
 }
+
+/**
+ * Boot the plugin config.js file and execute the functions there.  This gives
+ * the user a more robust way of controlling how his or her plugin interacts
+ * with the overall app.  This also allows plugin developers to add express and
+ * connect middleware and variables to the application.
+ * @param app the express.js app.
+ * @param basedir the base directory of this plugin
+**/
+function bootPluginConfigFunctions(app, basedir, config, completeFn) {
+    var bootPluginFunctionsDefer = Q.defer();
+    try {
+        var res = require(basedir + '/config.js');
+        _.each(_.keys(res), function(element, index, list) {
+            if (_.isFunction(res[element])) {
+                res[element](app);
+            }
+            if (index >= _.size(list) -1) {
+                bootPluginFunctionsDefer.resolve(config);
+            } 
+        });
+    } catch (e) {
+        logger.log('warning', 'No configuration functions found.');
+        bootPluginFunctionsDefer.resolve(config);
+    }
+    return bootPluginFunctionsDefer.promise;
+}
+
 
 /** 
  * Boots up the framework with the resources for this project.
@@ -349,6 +407,8 @@ function bootViews(app, plugin, config, completeFn) {
     logger.log('trace', 'booting views in ' + plugin.name);
     var basedir = plugin.baseDir + '/views';
     logger.log('trace', 'Views dir = ' + basedir);
+    
+    logger.log('trace', util.inspect(plugin));
     fs.readdir(basedir, function(err, files) {
         if (err) {
             logger.log('warning', err);
@@ -374,30 +434,31 @@ function bootViews(app, plugin, config, completeFn) {
                         // plugin name, and the text after is the view.  Otherwise, we keep the plugin name.
                         // ie: pluginName_viewName.jade.
                         
-                        var viewTagRegex = /(.*)\.jade/;
+                        // Removed the check for a .jade file.  Should move this to the JADE view engine.
+                        var viewTagRegex = /(.*)\.(.*)/;
                         var viewTagsMatch = viewTagRegex.exec(file);
                         var pluginDir = plugin;
                         // var pluginFile = basedir + "/views/" + file;
                         var pluginFile = basedir + '/' + file;
-                        logger.log('trace', JSON.stringify(viewTagsMatch));
                         /** TODO: Implement the underscore matching **/
 //                        if (!_.isUndefined(match[2])) {
 //                            // There were 2 captures, so the format was pluginName_view.jade
 //                            pluginDir = match[1];
 //                            pluginFile = '/plugins/' + match[1] + '/views/' + match[2];
 //                        }
-                        plugin.views[viewTagsMatch[1]] = pluginFile;
+                        plugin.setView(viewTagsMatch[1], pluginFile);
+                        logger.log('trace', 'Set view ' + viewTagsMatch[1] + ' to ' + pluginFile);
                         filesIndex--;
                         var pluginName = "";
                         if (filesIndex <= 0) {
-                            bootViewsDefer.resolve();
+                            bootViewsDefer.resolve(plugin);
                         }
                     } else {
                         // At some point, we should manage directories the same way
                         // we manage underscores.  For now, just ignore them.
                         filesIndex--;
                         if (filesIndex <= 0) {
-                            bootViewsDefer.resolve();                            
+                            bootViewsDefer.resolve(plugin);                            
                             // completeFn();
                         }
                     }
@@ -544,13 +605,11 @@ function bootModel(app, basedir, file, completeFn) {
 function registerModels(app) {
     var registerModelsDefer = Q.defer();
     logger.log('trace', 'Registering models');
-    
     // Models have the following syntax: 
     // Model.property = a property of the model.
     // Model.methods.method = a method on the model.
     // Model.validators.method = validator on the model.
     // Model.relationships.hasMany = a hasMany relationship definition.
-    
     var keys = registry.getSchemaNames();
     logger.log('trace', "keys = " + JSON.stringify(keys));
     if (_.isEmpty(keys)) {
@@ -559,13 +618,6 @@ function registerModels(app) {
     } else {
         _.each(keys, function(key, index, list) {
             registry.register(key);
-            // _.each(thisSchema, function(element, key, list) {
-            //     if (key == 'methods') {
-            //         // register methods here.
-            //     } else {
-            //         registry.register(key);
-            //     }
-            // });
             if (index == _.size(list) - 1) {
                 bootEventEmitter.emit('registerModels');
                 registerModelsDefer.resolve();
@@ -584,7 +636,7 @@ function registerPlugin(app, plugin, config) {
     logger.log("trace", "Ready to register plugin");
     var registerPluginDeferred = Q.defer();
     var pluginName;
-    if (config.name) {
+    if (config && config.name) {
         pluginName = config.name;
     } else {
         pluginName = plugin.name;
@@ -617,7 +669,7 @@ function bootControllers(app, plugin, config, completeFn) {
     logger.log('trace', 'Booting controllers for ' + basedir);
     fs.readdir(basedir + '/controllers', function(err, files){
         if (err) {
-            logger.log('error', 'Errors happened attempting to read controllers');
+            logger.log('error', 'Errors happened attempting to read controllers: ' + err);
             bootControllersDefer.reject("Unable to boot controllers: " + err);
         } else {
             if (!_.isNull(files) && !_.isUndefined(files)) {
@@ -688,7 +740,7 @@ function bootData(app, completeFn) {
              * as schemas are added to the registry.
              **/
             registry.on('add', function(tag, schema) {
-                logger.log('trace', "Schema entry added: " + tag + " " + JSON.stringify(schema));
+                logger.log('trace', "Schema entry added: " + util.inspect(tag) + " " + JSON.stringify(schema));
             })
             logger.log('trace', 'Done booting data');
             bootDataDefer.resolve();            

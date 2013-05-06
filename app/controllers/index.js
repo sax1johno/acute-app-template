@@ -10,11 +10,13 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **/
 
-var plugins = require('ghiraldi-plugin-registry').registry;
+var plugins = require('ghiraldi-plugin-registry').registry,
+    me = plugins.get('app'),
+    logger = require('ghiraldi-simple-logger'),
+    util = require('util');
 
 var index = function(req, res) {
-    var views = plugins.get('app');
-    res.render(plugins.get('app').views['index'], {title: 'Ghiraldi'});
+    res.send(me.getView('index', {locals: {title: 'Ghiraldi'}}));
 };
 
 module.exports = {
