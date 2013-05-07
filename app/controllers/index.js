@@ -16,7 +16,14 @@ var plugins = require('ghiraldi-plugin-registry').registry,
     util = require('util');
 
 var index = function(req, res) {
-    res.send(me.getView('index', {locals: {title: 'Ghiraldi'}}));
+    me.getView('index', {title: 'Ghiraldi'}, function(err, html) {
+        logger.log('trace', 'Should have rendered HTML: ' + html)
+        if (!err) {
+            res.send(html);
+        } else {
+            res.send(err);
+        }
+    });
 };
 
 module.exports = {
