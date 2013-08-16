@@ -26,6 +26,7 @@
     "sprintf": ">=0.1.1",
     "markdown": ">=0.4.0",
     "connect-flash": "0.1.0",
+    "transformers": "*",
     "ghiraldi-simple-logger": "*",
     "ghiraldi-plugin-registry": "*",
     "ghiraldi-schema-registry": "*",

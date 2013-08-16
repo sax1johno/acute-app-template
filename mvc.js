@@ -79,7 +79,6 @@ exports.boot = function(app){
     }).then(function() {
         return registerControllers(app);
     }).then(function() {
-        logger.log("trace", "reached the end of the line");
         bootDefer.resolve({'status': status, 'port': port, 'errors': errors, 'config': config});        
     }, function(err) {
         logger.log("trace", "REJECTED: error = " + err);        
@@ -254,7 +253,6 @@ function bootPlugin(app, plugin, completeFn) {
     var config = {};
     bootPluginConfig(app, plugin)
         .then(function(pPlugin, pConfig) {
-            logger.log('trace', 'Finally, thisPlugin looks like ' + util.inspect(pPlugin));
             thisPlugin = pPlugin;
             config = pConfig;
             return bootPluginConfigFunctions(app, thisPlugin, config);
@@ -268,7 +266,6 @@ function bootPlugin(app, plugin, completeFn) {
             return bootViews(app, thisPlugin, config);
         }).then(function(pPlugin) {
             thisPlugin = pPlugin;
-            logger.log('trace', 'thisPlugin in the final register is now ' + util.inspect(thisPlugin));
             /** The last step is to register the booted plugin with the plugin registry. **/
             return registerPlugin(app, thisPlugin, config);
         }).then(function() {
@@ -289,7 +286,6 @@ function bootPlugin(app, plugin, completeFn) {
 function bootPluginConfig(app, plugin, completeFn) {
     logger.log('trace', 'Booting plugin config for ' + plugin);
     var thisPlugin = new Plugin();
-    logger.log('trace', 'Plugin looks like ' + util.inspect(thisPlugin));
     var pluginLocation;
     var pluginConfig;
     
@@ -406,9 +402,7 @@ function bootViews(app, plugin, config, completeFn) {
     var bootViewsDefer = Q.defer();
     logger.log('trace', 'booting views in ' + plugin.name);
     var basedir = plugin.baseDir + '/views';
-    logger.log('trace', 'Views dir = ' + basedir);
     
-    logger.log('trace', util.inspect(plugin));
     fs.readdir(basedir, function(err, files) {
         if (err) {
             logger.log('warning', err);
@@ -441,13 +435,13 @@ function bootViews(app, plugin, config, completeFn) {
                         // var pluginFile = basedir + "/views/" + file;
                         var pluginFile = basedir + '/' + file;
                         /** TODO: Implement the underscore matching **/
+                        
 //                        if (!_.isUndefined(match[2])) {
 //                            // There were 2 captures, so the format was pluginName_view.jade
 //                            pluginDir = match[1];
 //                            pluginFile = '/plugins/' + match[1] + '/views/' + match[2];
 //                        }
                         plugin.setView(viewTagsMatch[1], pluginFile);
-                        logger.log('trace', 'Set view ' + viewTagsMatch[1] + ' to ' + pluginFile);
                         filesIndex--;
                         var pluginName = "";
                         if (filesIndex <= 0) {
@@ -512,7 +506,6 @@ function bootModels(app, plugin, config, completeFn) {
                         }
                     });
                 });
-                logger.log("trace", "files = " + files.join());
             }
         }, function(err) {
             logger.log('warning', err);
@@ -611,7 +604,6 @@ function registerModels(app) {
     // Model.validators.method = validator on the model.
     // Model.relationships.hasMany = a hasMany relationship definition.
     var keys = registry.getSchemaNames();
-    logger.log('trace', "keys = " + JSON.stringify(keys));
     if (_.isEmpty(keys)) {
         bootEventEmitter.emit('registerModels');
         registerModelsDefer.resolve();
@@ -642,7 +634,7 @@ function registerPlugin(app, plugin, config) {
         pluginName = plugin.name;
     }
     pluginRegistry.add(pluginName, plugin, function() {
-        logger.log('trace', 'Plugin should have been registered');
+        logger.log('trace', pluginName + ' Plugin should have been registered');
         // logger.log('trace', 'Plugin registry now looks like the following: ' + JSON.stringify(pluginRegistry));
         registerPluginDeferred.resolve();  
     }, function(err) {
@@ -679,7 +671,6 @@ function bootControllers(app, plugin, config, completeFn) {
                 } else {
                     var filesIndex = files.length;
                     files.forEach(function(file){
-                        logger.log('trace', "pushing controller " + basedir + " / " + file + " to controllers");                        
                         filesIndex--;
                         controllers.push({'basedir': basedir, 'file': file});
                         if (filesIndex <= 0) {
@@ -707,7 +698,6 @@ function bootControllers(app, plugin, config, completeFn) {
 function registerControllers(app, completeFn) {
     logger.log('trace', 'registering controllers');
     var registerControllersDefer = Q.defer();
-    logger.log('trace', 'controllers = ' + controllers);
     if (!_.isUndefined(controllers) && !_.isNull(controllers) && !_.isEmpty(controllers)) {
         _.each(controllers, function(controller, index, list) {
             bootController(app, controller.basedir, controller.file, function() {
