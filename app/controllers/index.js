@@ -16,8 +16,7 @@ var plugins = require('ghiraldi-plugin-registry').registry,
     util = require('util');
 
 var index = function(req, res) {
-    me.render('index', {title: 'Ghiraldi'}, function(err, html) {
-        logger.log('trace', 'Should have rendered HTML: ' + html)
+    me.render('index', {}, function(err, html) {
         if (!err) {
             res.send(html);
         } else {

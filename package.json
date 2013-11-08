@@ -1,6 +1,6 @@
 {
-  "name": "ghiraldi-app",
-  "description": "The description of your app goes here.",
+  "name": "John's Personal Website",
+  "description": "My personal website goes here.",
   "private": true,
   "version": "0.0.1",
    "engines": {
@@ -30,16 +30,10 @@
     "ghiraldi-simple-logger": "*",
     "ghiraldi-plugin-registry": "*",
     "ghiraldi-schema-registry": "*",
-    "ghiraldi-base-admin": "*",
-    "ghiraldi-base-role": "*",
-    "ghiraldi-base-admin": "*",
     "q": "*"
   },
   "ghiraldi": {
     "pluginsEnabled": [
-        "ghiraldi-base-user",
-        "ghiraldi-base-role",
-        "ghiraldi-base-admin"
     ],
     "environment": "sandbox",
     "production": {

@@ -1,12 +1,18 @@
 !!!
-html
+html(ng-app="JWOApp")
     head
-        title Your First Ghiraldi App
+        title John W O'Connor
+        link(rel="stylesheet", href="css/bootstrap.css")
+        // Fonts
+        include fontIncludes
         block css
-            link(rel='stylesheet', href='/css/style.css', type="text/css", media="screen")
+            include otherCss
+        link(rel="stylesheet", href="css/base.css")
+        include utilScripts
+        // Angular App Includes
+        include angularAppScripts
         block scripts
-            script(type="text/javascript", src="/js/base.js")
     body
-        block messages
-        block content
+        block container
     block userScripts
+        include otherScripts
