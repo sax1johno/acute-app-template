@@ -39,7 +39,9 @@
     "pluginsEnabled": [
         "ghiraldi-base-user",
         "ghiraldi-base-role",
-        "ghiraldi-base-admin"
+        "ghiraldi-base-admin",
+        "ghiraldi-admin-menu",
+        "ghiraldi-base-user-auth-basic"
     ],
     "environment": "sandbox",
     "production": {

@@ -666,8 +666,9 @@ function bootControllers(app, plugin, config, completeFn) {
         } else {
             if (!_.isNull(files) && !_.isUndefined(files)) {
                 if (files.length <= 0) {
-                    logger.log('error', "no controllers found");
-                    bootControllersDefer.reject("No controllers found in " + basedir);
+                    logger.log('warning', "no controllers found");
+                    // bootControllersDefer.reject("No controllers found in " + basedir);
+                    bootControllersDefer.resolve();
                 } else {
                     var filesIndex = files.length;
                     files.forEach(function(file){
