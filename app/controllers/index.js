@@ -13,13 +13,26 @@
  * 
  * The export returns an object with the router and optional config. 
 **/
-module.exports = function(injector, router) {
+module.exports = function(router) {
    // ex: set up a main responding method.
    var index = function(req, res, next) {
-       
-   }
+      res.render("index.jade", {});
+   };
+   
    
    router.all("/", index);
+   router.all("/cis67", function(req, res) {
+      res.redirect('https://sites.google.com/site/joconnorcis67');
+   });
+   
+   router.all("/cis18b", function(req, res) {
+      res.redirect('https://sites.google.com/site/joconnorcis18b');
+   });
+   
+   router.all("/cis21", function(req, res) {
+      res.redirect('https://sites.google.com/site/johnoconnorcis21');
+   });
+
    
    return {
       routes: router,

@@ -1,5 +1,5 @@
 {
-  "name": "John's Personal Website",
+  "name": "johnwoconnor-com",
   "description": "My website",
   "version": "0.0.1",
   "author": "John O'Connor <sax1johno@gmail.com>",
@@ -29,7 +29,8 @@
     "acute-express-utils": "*",
     "acute-mongoose-models": "*",
     "acute-express-controllers": "*",
-    "mocha": "*"
+    "mocha": "*",
+    "jade": "*"
   },
   "scripts": {
     "start": "node app/app.js"

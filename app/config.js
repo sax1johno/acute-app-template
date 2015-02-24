@@ -51,7 +51,11 @@ module.exports = [
             }
         }
     },
-    "acute-express-controllers",
+    {
+        packagePath: "acute-express-controllers",
+        controller_basedir: __dirname,
+        controller_dirname: "controllers"
+    },
     "acute-express-utils",
     "acute-mongoose-models",
     "acute-data-mongodb"
