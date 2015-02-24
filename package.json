@@ -1,86 +1,38 @@
 {
   "name": "John's Personal Website",
-  "description": "My personal website goes here.",
-  "private": true,
+  "description": "My website",
   "version": "0.0.1",
-   "engines": {
-    "node": "0.8.1",
-    "npm":  "1.1.49"
+  "author": "John O'Connor <sax1johno@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sax1johno/personal_website.git"
   },
-  "author": {
-    "name": "John O'Connor",
-    "email": "john@catalyzingconcepts.com"
+  "bugs": {
+    "url": "https://github.com/sax1johno/personal_website.git"
   },
   "contributors": [
-    {
-      "name": "John O'Connor",
-      "email": "john@catalyzingconcepts.com"
-    }
+    "John O'Connor <sax1johno@gmail.com>"
   ],
+  "license": "MIT",
   "dependencies": {
-    "express": ">=3.0.3",
-    "jade": "*",
+    "architect": "*",
+    "path": "*",
+    "async": "*",
     "underscore": "*",
-    "coffee-script": ">=1.3.3",
-    "nodeunit": ">=0.7.4",
-    "sprintf": ">=0.1.1",
-    "markdown": ">=0.4.0",
-    "connect-flash": "0.1.0",
-    "transformers": "*",
-    "ghiraldi-simple-logger": "*",
-    "ghiraldi-plugin-registry": "*",
-    "ghiraldi-schema-registry": "*",
-    "q": "*"
+    "morgan": "*",
+    "express": ">4",
+    "express-session": "*",
+    "body-parser": "*",
+    "acute-data-mongodb": "*",
+    "acute-express-app": "*",
+    "acute-express-data": "*",
+    "acute-express-utils": "*",
+    "acute-mongoose-models": "*",
+    "acute-express-controllers": "*",
+    "mocha": "*"
   },
-  "ghiraldi": {
-    "pluginsEnabled": [
-        "ghiraldi-base-user",
-        "ghiraldi-base-role",
-        "ghiraldi-base-admin",
-        "ghiraldi-admin-menu",
-        "ghiraldi-base-user-auth-basic"
-    ],
-    "environment": "sandbox",
-    "production": {
-        "data": {
-            "provider": "mongodb",
-            "settings": {
-                "host": "localhost",
-                "database": "johnpersonalwebsite",
-                "username": "john",
-                "password": "johnlovesjessi"
-            }
-        }
-    },
-    "development": {
-        "data": {
-            "provider": "mongodb",
-            "settings": {
-                "host": "54.243.200.231:27017",
-                "database": "johnpersonalwebsite",
-                "username": "john",
-                "password": "johnlovesjessi"   
-            }
-        },
-        "appSettings": {
-            "uploadDir": "/public/files",
-            "publicDir": "/public",
-            "sessionSecretSalt": "J0HnsP3rS0n4lW3b51te",
-            "viewsDir": "/app",
-            "viewEngine": "jade"
-        }
-    },
-    "sandbox": {
-        "data": {
-            "provider": "memory"
-        },
-        "appSettings": {
-            "uploadDir": "/public/files",
-            "publicDir": "/public",
-            "sessionSecretSalt": "J0HnsP3rS0n4lW3b51te",
-            "viewsDir": "/app",
-            "viewEngine": "jade"
-        }
-    }
-  }
+  "scripts": {
+    "start": "node app/app.js"
+  },
+  "homepage": "https://www.johnwoconnor.com"
 }

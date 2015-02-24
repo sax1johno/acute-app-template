@@ -1,36 +1,30 @@
 /**
- * index.js
- * This file contains a simple index controller for Rosetta.
- * @author John O'Connor
- * @license MIT License
+ * Each controller receives an injector and a router.  Injectors can be used to
+ * request services from the app injector, and router is used to register 
+ * routes on the app.  By default, the route for a controller follows its file
+ * structure, with "controller/index.js" mapping to "/" and everything else
+ * mapping to it's file name or folder name.
  * 
- * Copyright 2012, John O'Connor
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * eg: controller/test.js would map to a route with the prefix of /test/:action
+ * eg: controller/folder/file_name would map to a route with prefix of /folder/file_name/:action
+ * You specify routes and middle-ware directly, and other plugins can apply
+ * global or specific middleware to your controller (ie: anything in the /admin requires
+ * admin authentication)
+ * 
+ * The export returns an object with the router and optional config. 
 **/
-
-var plugins = require('ghiraldi-plugin-registry').registry,
-    me = plugins.get('app'),
-    logger = require('ghiraldi-simple-logger'),
-    util = require('util');
-
-var index = function(req, res) {
-    me.render('index', {}, function(err, html) {
-        if (!err) {
-            res.send(html);
-        } else {
-            res.send(err);
-        }
-    });
-};
-
-module.exports = {
-    routes: [
-        { 
-            verb: 'get',
-            route: '/',
-            method: index
-        }
-    ]
+module.exports = function(injector, router) {
+   // ex: set up a main responding method.
+   var index = function(req, res, next) {
+       
+   }
+   
+   router.all("/", index);
+   
+   return {
+      routes: router,
+      config: {
+           // base_path: "/test"
+      }
+   }
 }

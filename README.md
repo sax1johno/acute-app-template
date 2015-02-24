@@ -1,3 +1,5 @@
-John's personal website
-======================
-This is my personal website, and also a way to develop the plugins and blogging engine used in the ghiraldi blog example plugin.
+John's Personal Website
+====
+This is the personal website of John O'Connor.  I'll use this not only as a platform
+for showcasing my latest work, but also for just generally making my web presence
+available.
