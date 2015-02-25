@@ -3,6 +3,9 @@
   "description": "My website",
   "version": "0.0.1",
   "author": "John O'Connor <sax1johno@gmail.com>",
+  "engines": {
+    "node": "latest"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/sax1johno/personal_website.git"
@@ -20,7 +23,7 @@
     "async": "*",
     "underscore": "*",
     "morgan": "*",
-    "express": ">4",
+    "express": "*",
     "express-session": "*",
     "body-parser": "*",
     "acute-data-mongodb": "*",
