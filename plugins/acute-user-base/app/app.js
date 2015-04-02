@@ -5,10 +5,9 @@
 var architect = require('architect'),
     path = require('path'),
     configPath = path.join(__dirname, "config.js"),
-    acute_utils = require('acute-utils'),
     thisApp = require('./index'),
-    Q = require('q');
-
+    acute_utils = require('acute-utils');
+    
 /**
  * Finally, let's boot up this app and get it running.  Once the application
  * is booted, you can use any mechanism you want to listen on any port
@@ -21,12 +20,8 @@ acute_utils.loadApp(configPath, function(err, arch) {
          * Listen on the configured port.
          **/
         var appService = arch.getService("app");
-        var userApp = arch.getService('acute-user-base').getService('app');
-        
-        // var userBase = arch.getService('acute-user-base');
-        // var userSchema = userBase.getService('models').getSchema('user');
-        
-        appService.app.use('/user', userApp.app);
+        // var modelService = arch.getService('model');
+        console.log(appService.config);
         appService.app.listen(appService.config.port);
         console.log("Now listening to acute app on port ", appService.config.port);
     } else {

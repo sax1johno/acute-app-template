@@ -19,18 +19,20 @@ module.exports = function(router) {
       res.render("index.jade", {});
    };
    
-   router.all("/", index);
-   router.all("/cis67", function(req, res) {
-      res.redirect('https://sites.google.com/site/joconnorcis67');
-   });
+
+   router.get('/', index);   
+   // router.all("/", index);
+   // router.all("/cis67", function(req, res) {
+   //    res.redirect('https://sites.google.com/site/joconnorcis67');
+   // });
    
-   router.all("/cis18b", function(req, res) {
-      res.redirect('https://sites.google.com/site/joconnorcis18b');
-   });
+   // router.all("/cis18b", function(req, res) {
+   //    res.redirect('https://sites.google.com/site/joconnorcis18b');
+   // });
    
-   router.all("/cis21", function(req, res) {
-      res.redirect('https://sites.google.com/site/johnoconnorcis21');
-   });
+   // router.all("/cis21", function(req, res) {
+   //    res.redirect('https://sites.google.com/site/johnoconnorcis21');
+   // });
 
    
    return {

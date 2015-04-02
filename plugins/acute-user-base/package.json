@@ -1,0 +1,37 @@
+{
+  "name": "express_user",
+  "version": "1.0.0",
+  "description": "A micro-service for adding a user to an application.",
+  "main": "app/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "plugin": {
+    "provides": [
+      "acute-user-base"
+    ],
+    "consumes": [
+    ]
+  },
+  "dependencies": {
+    "architect": "*",
+    "path": "*",
+    "async": "*",
+    "underscore": "*",
+    "morgan": "*",
+    "express": "*",
+    "express-session": "*",
+    "body-parser": "*",
+    "acute-data-mongodb": "*",
+    "acute-express-app": "*",
+    "acute-express-data": "*",
+    "acute-express-utils": "*",
+    "acute-utils": "*",
+    "acute-mongoose-models": "*",
+    "acute-express-controllers": "*",
+    "mocha": "*",
+    "jade": "*"
+  },
+  "author": "John O'Connor",
+  "license": "ISC"
+}

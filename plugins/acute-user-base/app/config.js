@@ -12,7 +12,7 @@ module.exports = [
             app.use(express.static(__dirname + '/app/public'));
             app.use(
                 session({ 
-                    secret: "keyboardcat",   
+                    secret: "keyboardcat",
                     resave: false,
                     saveUninitialized: true
                 })
@@ -58,8 +58,6 @@ module.exports = [
     },
     "acute-express-utils",
     "acute-mongoose-models",
-    "acute-data-mongodb",
-    "../plugins/acute-user-base"
-    // "acute-data-redis"
+    "acute-data-mongodb"
     // "./core/acute-express-mvc"
 ];

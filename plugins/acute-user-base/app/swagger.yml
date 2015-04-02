@@ -1,0 +1,142 @@
+# YAML for the User application in my personal website.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "1.0.0"
+  title: aCute User µService
+
+# Describe your paths here
+paths:
+  # This is a path endpoint. Change it.
+  /user:
+    # This is a HTTP operation
+    get:
+      # Describe this verb here. Note: you can use markdown
+      description: |
+        Gets a `user` object.
+        Query param "id" determines the ID of the user to retrieve.
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: id
+          in: query
+          description: The ID of the user to retrieve
+          required: true
+          type: string
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: User
+            $ref: '#/definitions/User'
+    post:
+      # Describe this verb here. Note: you can use markdown
+      description:
+        Creates a new `user` object or updates an existing one.
+        ID is specified in the post body
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: user
+          in: body
+          description: The user data to save
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+          # format: uuid
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response with created user.
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: User
+            $ref: '#/definitions/User'
+  /user/{id}:
+    put:
+      # Describe this verb here. Note: you can use markdown
+      description:
+        Updates an existing `user` object or updates an existing one.
+        ID is specified in the URL
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: id
+          in: path
+          description: The ID of the user to retrieve
+          required: true
+          type: string
+          format: uuid
+        -
+          name: user
+          in: body
+          required: true
+          schema:
+            title: User
+            $ref: '#/definitions/User'
+          # format: uuid
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response with updated user.
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: User
+            $ref: '#/definitions/User'
+        404:
+          description: Error response where user was not found
+    delete:
+      # Describe this verb here. Note: you can use markdown
+      description:
+        Deletes an existing `user` object or updates an existing one.
+        ID is specified in the URL
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: id
+          in: path
+          description: The ID of the user to retrieve
+          required: true
+          type: string
+          format: uuid
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response with updated user.
+          schema:
+            title: User
+            $ref: '#/definitions/User'
+        404:
+          description: User was not found.
+
+definitions:
+  User:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      firstName:
+        type: string
+      lastName:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+        format: password
+        

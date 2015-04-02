@@ -30,10 +30,12 @@
     "acute-express-app": "*",
     "acute-express-data": "*",
     "acute-express-utils": "*",
+    "acute-utils": "*",
     "acute-mongoose-models": "*",
     "acute-express-controllers": "*",
     "mocha": "*",
-    "jade": "*"
+    "jade": "*",
+    "q": "*"
   },
   "scripts": {
     "start": "node app/app.js"
