@@ -32,6 +32,17 @@ module.exports = function(router) {
       res.redirect('https://sites.google.com/site/johnoconnorcis21');
    });
 
+   router.all("/blog", function(req, res, next) {
+      res.redirect("https://johnwoconnor.blogspot.com");
+   });
+   
+   router.all("/development", function(req, res, next) {
+      res.redirect("http://johnwoconnor.blogspot.com/p/big-list-of-development-resources.html");
+   });
+
+   router.all("/design", function(req, res, next) {
+      res.redirect("http://johnwoconnor.blogspot.com/p/big-list-of-design-resources.html");
+   });
    
    return {
       routes: router,
