@@ -1,7 +1,7 @@
 {
   "name": "express_user",
   "version": "1.0.0",
-  "description": "A micro-service for adding a user to an application.",
+  "description": "A aCute application for managing users.  This project can be cloned and modified, and adds the 'user' system as a µService that can be imported into another application or run as a standalone app",
   "main": "app/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

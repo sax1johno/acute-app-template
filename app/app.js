@@ -14,7 +14,6 @@ var architect = require('architect'),
  * is booted, you can use any mechanism you want to listen on any port
  * you'd like and the application configures the port.
  **/
-
 acute_utils.loadApp(configPath, function(err, arch) {
     if (!err) {
         /**
@@ -23,11 +22,14 @@ acute_utils.loadApp(configPath, function(err, arch) {
         var appService = arch.getService("app");
         var userApp = arch.getService('acute-user-base').getService('app');
         
-        // var userBase = arch.getService('acute-user-base');
-        // var userSchema = userBase.getService('models').getSchema('user');
-        
+        // Set up all of the subapps here.
         appService.app.use('/user', userApp.app);
         appService.app.listen(appService.config.port);
+        
+        appService.app.use(function(req, res, next) {
+            res.status(404).render('404.jade');
+        });
+        
         console.log("Now listening to acute app on port ", appService.config.port);
     } else {
         // If the boot promise is rejected, then display the errors.
