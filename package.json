@@ -1,6 +1,6 @@
 {
-  "name": "johnwoconnor-com",
-  "description": "My website",
+  "name": "acute-app-template",
+  "description": "Application template for aCute app framework",
   "version": "0.0.1",
   "author": "John O'Connor <sax1johno@gmail.com>",
   "engines": {
@@ -8,10 +8,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sax1johno/personal_website.git"
+    "url": "https://github.com/sax1johno/acute-app-template.git"
   },
   "bugs": {
-    "url": "https://github.com/sax1johno/personal_website.git"
+    "url": "https://github.com/sax1johno/acute-app-template/issues"
   },
   "contributors": [
     "John O'Connor <sax1johno@gmail.com>"
@@ -39,6 +39,5 @@
   },
   "scripts": {
     "start": "node app/app.js"
-  },
-  "homepage": "https://www.johnwoconnor.com"
+  }
 }
