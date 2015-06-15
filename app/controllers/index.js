@@ -1,6 +1,5 @@
 /**
- * Each controller receives an injector and a router.  Injectors can be used to
- * request services from the app injector, and router is used to register 
+ * Each controller receives a router.  A router is used to register 
  * routes on the app.  By default, the route for a controller follows its file
  * structure, with "controller/index.js" mapping to "/" and everything else
  * mapping to it's file name or folder name.
@@ -20,30 +19,7 @@ module.exports = function(router) {
    };
    
    router.all("/", index);
-   router.all("/cis67", function(req, res) {
-      res.redirect('https://sites.google.com/site/joconnorcis67');
-   });
-   
-   router.all("/cis18b", function(req, res) {
-      res.redirect('https://sites.google.com/site/joconnorcis18b');
-   });
-   
-   router.all("/cis21", function(req, res) {
-      res.redirect('https://sites.google.com/site/johnoconnorcis21');
-   });
 
-   router.all("/blog", function(req, res, next) {
-      res.redirect("https://johnwoconnor.blogspot.com");
-   });
-   
-   router.all("/development", function(req, res, next) {
-      res.redirect("http://johnwoconnor.blogspot.com/p/big-list-of-development-resources.html");
-   });
-
-   router.all("/design", function(req, res, next) {
-      res.redirect("http://johnwoconnor.blogspot.com/p/big-list-of-design-resources.html");
-   });
-   
    return {
       routes: router,
       config: {
